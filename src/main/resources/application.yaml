@@ -1,0 +1,10 @@
+ktor:
+  application:
+    modules:
+      - org.dtree.fhir.fhirService.ApplicationKt.module
+  deployment:
+    port: 4040
+jwt:
+  domain: "https://jwt-provider-domain/"
+  audience: "jwt-audience"
+  realm: "ktor sample app"

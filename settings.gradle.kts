@@ -1,3 +1,4 @@
 
-rootProject.name = "fhir-service"
-
+rootProject.name = "server"
+include("core")
+include("server")

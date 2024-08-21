@@ -1,0 +1,82 @@
+[versions]
+ktor = "2.3.12" # Set your Ktor version
+kotlin = "2.0.10" # Set your Kotlin version
+koin = "3.5.6" # Set your Koin version
+postgres = "42.5.1" # Set your PostgreSQL driver version
+h2 = "2.2.224" # Set your H2 version
+logback = "1.4.14" # Set your Logback version
+dotenv = "6.4.1" # Set the dotenv version
+swagger-ui = "2.9.0"
+jquery = "3.2.1"
+hapiFhir = "6.8.0"
+hapiFhirCore = "6.0.22"
+jackson = "2.13.5"
+jacksonCore = "2.15.2"
+slf4j = "2.0.12"
+okhttp = "4.9.1"
+coroutines = "1.2.1"
+jsonPath = "2.7.0"
+snakeYaml = "2.2"
+gson = "2.10.1"
+kaml = "0.47.0"
+hamcrest = "2.2"
+kotlinLogging = "5.1.0"
+junit = "5.9.2"
+jsonToolsJsonPatch = "1.13"
+
+[libraries]
+ktor-server-core = { module = "io.ktor:ktor-server-core-jvm", version.ref = "ktor" }
+ktor-server-netty = { module = "io.ktor:ktor-server-netty-jvm", version.ref = "ktor" }
+ktor-server-webjars = { module = "io.ktor:ktor-server-webjars-jvm", version.ref = "ktor" }
+jquery = { module = "org.webjars:jquery", version.ref = "jquery" }
+ktor-swagger-ui = { module = "io.github.smiley4:ktor-swagger-ui", version.ref = "swagger-ui" }
+ktor-server-auth = { module = "io.ktor:ktor-server-auth-jvm", version.ref = "ktor" }
+ktor-client-apache = { module = "io.ktor:ktor-client-apache", version.ref = "ktor" }
+ktor-server-resources = { module = "io.ktor:ktor-server-resources", version.ref = "ktor" }
+ktor-serialization-gson = { module = "io.ktor:ktor-serialization-gson-jvm", version.ref = "ktor" }
+ktor-server-call-logging = { module = "io.ktor:ktor-server-call-logging-jvm", version.ref = "ktor" }
+ktor-server-auth-jwt = { module = "io.ktor:ktor-server-auth-jwt-jvm", version.ref = "ktor" }
+koin-ktor = { module = "io.insert-koin:koin-ktor", version.ref = "koin" }
+koin-logger-slf4j = { module = "io.insert-koin:koin-logger-slf4j", version.ref = "koin" }
+ktor-serialization-json = { module = "io.ktor:ktor-serialization-kotlinx-json-jvm", version.ref = "ktor" }
+ktor-server-content-negotiation = { module = "io.ktor:ktor-server-content-negotiation-jvm", version.ref = "ktor" }
+postgresql = { module = "org.postgresql:postgresql", version.ref = "postgres" }
+h2 = { module = "com.h2database:h2", version.ref = "h2" }
+logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
+ktor-server-config-yaml = { module = "io.ktor:ktor-server-config-yaml", version.ref = "ktor" }
+dotenv-kotlin = { module = "io.github.cdimascio:dotenv-kotlin", version.ref = "dotenv" }
+ktor-server-test-host = { module = "io.ktor:ktor-server-test-host-jvm", version.ref = "ktor" }
+kotlin-test-junit = { module = "org.jetbrains.kotlin:kotlin-test-junit", version.ref = "kotlin" }
+
+# HapiFhir modules
+hapi-fhir-base = { group = "ca.uhn.hapi.fhir", name = "hapi-fhir-base", version.ref = "hapiFhir" }
+hapi-fhir-client = { group = "ca.uhn.hapi.fhir", name = "hapi-fhir-client", version.ref = "hapiFhir" }
+hapi-fhir-structures-r4 = { group = "ca.uhn.hapi.fhir", name = "hapi-fhir-structures-r4", version.ref = "hapiFhir" }
+hapi-fhir-validation = { group = "ca.uhn.hapi.fhir", name = "hapi-fhir-validation", version.ref = "hapiFhir" }
+hapi-fhir-caching-guava = { group = "ca.uhn.hapi.fhir", name = "hapi-fhir-caching-guava", version.ref = "hapiFhir" }
+hapi-fhir-client-okhttp = { group = "ca.uhn.hapi.fhir", name = "hapi-fhir-client-okhttp", version.ref = "hapiFhir" }
+
+# Jackson modules
+jackson-core = { group = "com.fasterxml.jackson.core", name = "jackson-core", version.ref = "jacksonCore" }
+jackson-databind = { group = "com.fasterxml.jackson.core", name = "jackson-databind", version.ref = "jackson" }
+jackson-dataformat-xml = { group = "com.fasterxml.jackson.dataformat", name = "jackson-dataformat-xml", version.ref = "jackson" }
+jackson-module-jaxb = { group = "com.fasterxml.jackson.module", name = "jackson-module-jaxb-annotations", version.ref = "jackson" }
+jackson-jsr310 = { group = "com.fasterxml.jackson.datatype", name = "jackson-datatype-jsr310", version.ref = "jackson" }
+json-tools-patch = { group = "com.github.java-json-tools", name = "json-patch", version.ref = "jsonToolsJsonPatch" }
+
+# Other dependencies
+kotlin-stdlib = { group = "org.jetbrains.kotlin", name = "kotlin-stdlib", version.ref = "kotlin" }
+slf4j-simple = { group = "org.slf4j", name = "slf4j-simple", version.ref = "slf4j" }
+okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
+okhttp-logging-interceptor = { group = "com.squareup.okhttp3", name = "logging-interceptor", version.ref = "okhttp" }
+kotlin-logging-jvm = { group = "io.github.oshai", name = "kotlin-logging-jvm", version.ref = "kotlinLogging" }
+coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "coroutines" }
+json-path = { group = "com.jayway.jsonpath", name = "json-path", version.ref = "jsonPath" }
+snake-yaml = { group = "org.yaml", name = "snakeyaml", version.ref = "snakeYaml" }
+gson = { group = "com.google.code.gson", name = "gson", version.ref = "gson" }
+kaml = { group = "com.charleskorn.kaml", name = "kaml", version.ref = "kaml" }
+hamcrest-core = { group = "org.hamcrest", name = "hamcrest-core", version.ref = "hamcrest" }
+
+# Testing dependencies
+junit-jupiter-api = { group = "org.junit.jupiter", name = "junit-jupiter-api", version.ref = "junit" }
+junit-jupiter-engine = { group = "org.junit.jupiter", name = "junit-jupiter-engine", version.ref = "junit" }

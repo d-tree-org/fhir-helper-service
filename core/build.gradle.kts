@@ -26,13 +26,16 @@ dependencies {
     implementation(libs.kaml)
     implementation(libs.hamcrest.core)
     implementation(libs.slf4j.simple)
+
     implementation(libs.hapi.fhir.structures.r4)
     implementation(libs.hapi.fhir.validation)
     implementation(libs.hapi.fhir.caching.guava)
     implementation(libs.hapi.fhir.client.okhttp)
+
     implementation(libs.okhttp)
     implementation(libs.okhttp.logging.interceptor)
     implementation(libs.kotlin.logging.jvm)
+
     implementation(libs.dotenv.kotlin)
     implementation(libs.json.tools.patch)
 

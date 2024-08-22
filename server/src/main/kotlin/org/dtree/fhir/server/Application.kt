@@ -1,5 +1,6 @@
 package org.dtree.fhir.server
 
+import io.github.cdimascio.dotenv.dotenv
 import io.ktor.server.application.*
 import org.dtree.fhir.server.plugins.configureFrameworks
 import org.dtree.fhir.server.plugins.configureRouting
@@ -10,7 +11,9 @@ fun main(args: Array<String>) {
 }
 
 fun Application.module() {
+    val dotEnv = dotenv()
+
     configureSecurity()
     configureRouting()
-    configureFrameworks()
+    configureFrameworks(dotEnv)
 }

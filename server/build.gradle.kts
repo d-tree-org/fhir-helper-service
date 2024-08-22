@@ -57,6 +57,11 @@ dependencies {
     implementation(libs.ktor.server.config.yaml)
     implementation(libs.dotenv.kotlin)
 
+    implementation(libs.hapi.fhir.structures.r4)
+    implementation(libs.hapi.fhir.validation)
+    implementation(libs.hapi.fhir.caching.guava)
+    implementation(libs.hapi.fhir.client.okhttp)
+
     testImplementation(libs.ktor.server.test.host)
     testImplementation(libs.kotlin.test.junit)
 }

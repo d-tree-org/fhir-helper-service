@@ -6,6 +6,7 @@ import org.dtree.fhir.server.core.search.filters.filterByDateCreated
 import org.dtree.fhir.server.core.search.filters.filterByLocation
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
+import java.time.LocalDate
 import java.util.*
 
 object StatsService: KoinComponent {
@@ -14,7 +15,7 @@ object StatsService: KoinComponent {
        val filterFormData = FilterFormData(
            listOf(
                filterByLocation(id),
-               filterByDateCreated(Date())
+               filterByDateCreated(LocalDate.now())
            )
        )
        val data = fetchDataTest(filterFormData)

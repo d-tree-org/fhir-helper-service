@@ -1,5 +1,6 @@
 package org.dtree.fhir.server.core.models
 
+import java.time.LocalDate
 import java.util.*
 
 data class FilterFormData(
@@ -17,13 +18,13 @@ data class FilterFormParamData(
     val name: String,
     val type: FilterParamType,
     val value: String? = null,
-    val valueDate: Date? = null,
+    val valueDate: LocalDate? = null,
     val valueDateRange: DateRange? = null
 )
 
 data class DateRange(
-    val from: Date?,
-    val to: Date? = null
+    val from: LocalDate?,
+    val to: LocalDate? = null
 )
 
 enum class FilterParamType {

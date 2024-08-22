@@ -69,14 +69,11 @@ suspend fun fetchData(data: FilterFormData): ResultData {
                 if (value != null) {
                     val (from, to) = value
                     if (from != null && to != null) {
-                        val start = from.toInstant().atZone(ZoneId.systemDefault()).toLocalDate()
-                        val end = to.toInstant().atZone(ZoneId.systemDefault()).toLocalDate()
-                        rawDate = start.datesUntil(end.plusDays(1)).map { it.format(DateTimeFormatter.ISO_LOCAL_DATE) }
+                        rawDate = from.datesUntil(to.plusDays(1)).map { it.format(DateTimeFormatter.ISO_LOCAL_DATE) }
                             .toList()
                     } else if (from != null) {
                         rawDate = listOf(
-                            from.toInstant().atZone(ZoneId.systemDefault()).toLocalDate()
-                                .format(DateTimeFormatter.ISO_LOCAL_DATE)
+                            from.format(DateTimeFormatter.ISO_LOCAL_DATE)
                         )
                     }
                 }
@@ -211,7 +208,7 @@ fun createQuestionnaireResponseFilters(
     query.remove("dateRange")
 
     if (date != null) {
-        query.add("_tag", date.joinToString(",") { "https://d-tree.org/fhir/created-on-tag|${formatDate(it)}" })
+//        query.add("_tag", date.joinToString(",") { "https://d-tree.org/fhir/created-on-tag|${formatDate(it)}" })
     }
 
     query.fromArray(extras)
@@ -235,7 +232,7 @@ fun createPatientFilters(
     query.remove("dateRange")
 
     if (date != null) {
-        query.add("_tag", date.joinToString(",") { "https://d-tree.org/fhir/created-on-tag|${formatDate(it)}" })
+//        query.add("_tag", date.joinToString(",") { "https://d-tree.org/fhir/created-on-tag|${formatDate(it)}" })
     }
 
     if (types != null) {
@@ -245,8 +242,8 @@ fun createPatientFilters(
     return query.toUrl("/Patient")
 }
 
-fun formatDate(date: Date): String {
-    return date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))
+fun formatDate(date: LocalDate): String {
+    return date.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))
 }
 
 data class Options(val hasCount: Boolean = true, val onlyActive: Boolean = false, val formatUrl: Boolean = false)

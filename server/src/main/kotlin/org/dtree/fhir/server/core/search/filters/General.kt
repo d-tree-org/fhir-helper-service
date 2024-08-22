@@ -1,6 +1,7 @@
 package org.dtree.fhir.server.core.search.filters
 
 import org.dtree.fhir.server.core.models.*
+import java.time.LocalDate
 import java.util.*
 
 fun filterByLocation(location: String) = filterByPredefined(
@@ -12,7 +13,7 @@ fun filterByLocation(location: String) = filterByPredefined(
     ),
 )
 
-fun filterByDateCreated(dateCreated: Date) = filterByPredefined(
+fun filterByDateCreated(dateCreated: LocalDate) = filterByPredefined(
     id = "filter-by-date-created",
     template = "filter-by-date-created",
     params = listOf(

@@ -81,7 +81,7 @@ class FhirClient(private val dotenv: Dotenv, private val iParser: IParser) {
     suspend inline fun <reified T : Resource>transaction(requests: List<Bundle.BundleEntryRequestComponent>): List<T> {
         val bundle = Bundle()
         bundle.setType(Bundle.BundleType.TRANSACTION)
-        bundle.entry.addAll(requests.map {rq ->
+        bundle.entry.addAll(requests.map { rq ->
             Bundle.BundleEntryComponent().apply {
                 request = rq
             }
@@ -92,36 +92,19 @@ class FhirClient(private val dotenv: Dotenv, private val iParser: IParser) {
         return resources.toList() as List<T>
     }
 
-    suspend fun fetchBundle(path: String = "", query: Map<String, String> = mapOf()): DataResponseState<Bundle> {
-        val base = URL(dotenv["FHIR_BASE_URL"]).toHttpUrlOrNull()!!
-        val url = base.newBuilder()
-        url.addPathSegments(path)
-        query.forEach {
-            url.addQueryParameter(it.key, it.value)
-        }
-        val request = Request.Builder()
-            .url(url.build())
-            .get()
-            .build()
-        val call = okHttpClient.newCall(request)
-        return withContext(Dispatchers.IO) {
-            try {
-                val response = call.execute()
-                if (!response.isSuccessful) {
-                    Logger.error("Failed to upload batch: ${response.code} - ${response.message}")
-                    return@withContext DataResponseState.Error(exceptionFromResponse(response))
-                } else {
-                    Logger.info("Uploaded successfully")
+     fun fetchBundle(list: List<Bundle.BundleEntryRequestComponent>): Bundle {
+        val bundle = Bundle()
+         bundle.setType(Bundle.BundleType.BATCH)
+        bundle.entry.addAll(
+            list.map {rq ->
+                Bundle.BundleEntryComponent().apply {
+                    request = rq
+                    fullUrl = rq.url
+
                 }
-                response.close()
-                val rawStr =
-                    response.body?.string() ?: return@withContext DataResponseState.Error(Exception("Response empty"))
-                DataResponseState.Success(iParser.parseResource(Bundle::class.java, rawStr))
-            } catch (e: Exception) {
-                Logger.error("Failed to upload batch: ${e.message}")
-                DataResponseState.Error(e)
             }
-        }
+        )
+        return client.transaction().withBundle(bundle).execute()
     }
 
     suspend fun bundleUpload(

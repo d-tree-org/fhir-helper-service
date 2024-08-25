@@ -69,8 +69,8 @@ class TokenAuthenticator(
     companion object {
         fun createAuthenticator(dotenv: Dotenv): TokenAuthenticator {
             val keycloakUrl = dotenv["KEYCLOAK_ISSUER"]
-            val clientId = dotenv["KEYCLOAK_CLIENT_ID"]
-            val clientSecret = dotenv["KEYCLOAK_CLIENT_SECRET"]
+            val clientId = dotenv["KEYCLOAK_CLIENT_ID"] ?: dotenv["KEYCLOAK_ID"]
+            val clientSecret = dotenv["KEYCLOAK_CLIENT_SECRET"] ?: dotenv["KEYCLOAK_SECRET"]
             val username = dotenv["KEYCLOAK_USERNAME"]
             val password = dotenv["KEYCLOAK_PASSWORD"]
 

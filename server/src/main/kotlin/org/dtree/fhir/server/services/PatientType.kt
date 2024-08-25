@@ -1,5 +1,6 @@
 package org.dtree.fhir.server.services
 
+import org.dtree.fhir.core.uploader.general.FhirClient
 import org.dtree.fhir.server.core.models.FilterFormData
 import org.dtree.fhir.server.core.models.FilterFormItem
 import org.dtree.fhir.server.core.models.FilterTemplateType
@@ -7,14 +8,11 @@ import org.dtree.fhir.server.core.search.filters.PredefinedFilters
 import org.hl7.fhir.r4.model.Bundle
 import org.hl7.fhir.r4.model.QuestionnaireResponse
 import java.time.LocalDate
-import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import java.util.Date
-import kotlin.collections.component1
-import kotlin.collections.component2
 import kotlin.collections.set
+import kotlin.random.Random
 
-enum class PatientType(private val value: String) {
+enum class PatientType(val value: String) {
     NEWLY_DIAGNOSED_CLIENT("newly-diagnosed-client"), CLIENT_ALREADY_ON_ART("client-already-on-art"), EXPOSED_INFANT("exposed-infant");
 
     override fun toString(): String {
@@ -22,17 +20,49 @@ enum class PatientType(private val value: String) {
     }
 }
 
-suspend fun fetchDataTest(data: FilterFormData): ResultData {
-  val filters =  data.filters.map { filter ->
-        if (filter.filterType == FilterTemplateType.predifined) {
-            val filterFunc = PredefinedFilters[filter.template] ?: throw Exception("Template not defined")
-            filterFunc(filter)
-        } else {
-            createFilter(filter)
+suspend fun fetchDataTest(client: FhirClient, actions: List<FilterFormData>): ResultData {
+    val requests = mutableListOf<Bundle.BundleEntryRequestComponent>()
+    for (data in actions) {
+        val filters = data.filters.map { filter ->
+            if (filter.filterType == FilterTemplateType.predifined) {
+                val filterFunc = PredefinedFilters[filter.template] ?: throw Exception("Template not defined")
+                filterFunc(filter)
+            } else {
+                createFilter(filter)
+            }
         }
+        println(filters)
+        val query = QueryParam()
+        for (filter in filters) {
+            filter.forEach { query.set(it.first, it.second) }
+        }
+        val requestUrl = query.toUrl("/${data.resource}")
+        println(requestUrl)
+        requests.add(Bundle.BundleEntryRequestComponent().apply {
+            method = Bundle.HTTPVerb.GET
+            url = requestUrl
+            id = data.filterId
+        })
     }
-    println(filters)
-    return  ResultData(listOf(), listOf())
+    val resultBundle: Bundle = client.fetchBundle(requests)
+    val defaultGroupId = Random.nextInt().toString()
+    val summaries = mutableMapOf<String, ArrayList<SummaryItem>>()
+    resultBundle.entry.forEachIndexed { idx, entry ->
+        val filter = actions[idx]
+        val value = if ((entry.resource as Bundle).hasTotal()) {
+            (entry.resource as Bundle).total
+        } else {
+            filter.customParser?.invoke((entry.resource as Bundle)) ?: throw Exception("Pass a custom parser")
+        }
+        val groupKey = filter.groupId ?: defaultGroupId
+        val list = summaries.getOrPut(groupKey) { ArrayList() }
+        list.add(
+            SummaryItem(
+                name = filter.title ?: "", value = value,
+            )
+        )
+    }
+    return ResultData(summaries, LocalDate.now())
 }
 
 fun createFilter(filter: FilterFormItem): List<Pair<String, String>> {
@@ -48,7 +78,7 @@ fun createFilter(filter: FilterFormItem): List<Pair<String, String>> {
     }
 }
 
-suspend fun fetchData(data: FilterFormData): ResultData {
+suspend fun fetchData(client: FhirClient, data: FilterFormData): ResultDataOld {
     println(data.toString())
     var rawDate: List<String>? = null
     val baseFilter = data.filters.map { filter ->
@@ -90,6 +120,7 @@ suspend fun fetchData(data: FilterFormData): ResultData {
     rawDate = rawDate?.let { fixDate(it) }
 
     val bundle = fetchBundle(
+        client,
         listOf(
             createQuestionnaireResponseFilters("patient-finish-visit", rawDate, baseFilter),
             createPatientFilters(listOf(PatientType.NEWLY_DIAGNOSED_CLIENT), rawDate, baseFilter),
@@ -145,7 +176,7 @@ suspend fun fetchData(data: FilterFormData): ResultData {
         "Exposed infant (visits)"
     )
 
-    return ResultData(summaries = getResults(bundle, summary, listOf(Filter(4) { resource ->
+    return ResultDataOld(summaries = getResults(bundle, summary, listOf(Filter(4) { resource ->
         resource?.item?.firstOrNull()?.item?.find { it.linkId == "able-to-conduct-test" }?.answer?.firstOrNull()?.valueBooleanType?.value
             ?: false
     }, Filter(5) { resource ->
@@ -176,14 +207,17 @@ fun getResults(
     } ?: emptyList()
 }
 
-data class ResultData(val summaries: List<SummaryItem>, val date: List<String>?)
-data class SummaryItem(val name: String, val value: Int)
-
 data class Filter(val index: Int, val filter: (QuestionnaireResponse?) -> Boolean)
 
-suspend fun fetchBundle(filters: List<String>): Bundle? {
-    println(filters)
-    return null
+suspend fun fetchBundle(fhirClient: FhirClient, filters: List<String>): Bundle {
+    return fhirClient.fetchBundle(
+        filters.map {
+            Bundle.BundleEntryRequestComponent().apply {
+                method = Bundle.HTTPVerb.GET
+                url = it
+            }
+        }
+    )
 }
 
 fun fixDate(date: List<String>): List<String> {
@@ -248,63 +282,3 @@ fun formatDate(date: LocalDate): String {
 
 data class Options(val hasCount: Boolean = true, val onlyActive: Boolean = false, val formatUrl: Boolean = false)
 
-class QueryParam(
-    values: Map<String, String> = mapOf(), private val encodeUrl: Boolean = false
-) {
-    private val queries: MutableMap<String, String> = mutableMapOf()
-
-    init {
-        from(values)
-    }
-
-    fun add(key: String, value: Any) {
-        if (queries.containsKey(key)) {
-            queries["$key[${Math.random()}]"] = value.toString()
-        } else {
-            queries[key] = value.toString()
-        }
-    }
-
-    fun get(key: String): String? {
-        return queries[key]
-    }
-
-    fun set(key: String, value: Any) {
-        queries[key] = value.toString()
-    }
-
-    fun remove(key: String) {
-        queries.remove(key)
-    }
-
-    private fun from(values: Map<String, String>) {
-        for ((key, value) in values) {
-            add(key, value)
-        }
-    }
-
-    fun has(key: String): Boolean {
-        return queries.containsKey(key)
-    }
-
-    fun fromArray(values: List<Map<String, String>>) {
-        for (valueMap in values) {
-            from(valueMap)
-        }
-    }
-
-    fun toUrl(resources: String): String {
-        val query = queries.map { (key, value) ->
-            if (key.contains("[")) {
-                "${key.split("[")[0]}=${if (encodeUrl) value.encodeUrl() else value}"
-            } else {
-                "$key=${if (encodeUrl) value.encodeUrl() else value}"
-            }
-        }.joinToString("&")
-        return "$resources?$query"
-    }
-
-    private fun String.encodeUrl(): String {
-        return java.net.URLEncoder.encode(this, "UTF-8")
-    }
-}

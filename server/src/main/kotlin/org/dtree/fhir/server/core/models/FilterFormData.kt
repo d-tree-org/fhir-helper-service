@@ -1,10 +1,15 @@
 package org.dtree.fhir.server.core.models
 
+import org.hl7.fhir.r4.model.Bundle
 import java.time.LocalDate
-import java.util.*
 
 data class FilterFormData(
-    val filters: List<FilterFormItem>
+    val resource: String,
+    val filterId: String,
+    val filters: List<FilterFormItem>,
+    val title: String? = null,
+    val groupId: String? = null,
+    val customParser: ((Bundle) -> Int)? = null
 )
 
 data class FilterFormItem(
@@ -19,7 +24,7 @@ data class FilterFormParamData(
     val type: FilterParamType,
     val value: String? = null,
     val valueDate: LocalDate? = null,
-    val valueDateRange: DateRange? = null
+    val valueDateRange: DateRange? = null,
 )
 
 data class DateRange(
@@ -40,7 +45,7 @@ fun filterItem(id: String, init: FilterFormItem.() -> Unit): FilterFormItem {
     val filter = FilterFormItem(
         filterId = id,
         template = "given={name}",
-        params = listOf()
+        params = listOf(),
     )
     filter.init()
     return filter

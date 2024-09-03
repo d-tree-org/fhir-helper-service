@@ -9,7 +9,7 @@ import org.koin.core.component.inject
 object StatsService : KoinComponent {
     val client by inject<FhirClient>()
 
-    suspend fun getFacilityStats(id: String) {
+    suspend fun getFacilityStats(id: String): ResultData {
         val locationFilter = filterByLocation(id)
         val baseFilters = listOf(locationFilter)
 
@@ -28,7 +28,6 @@ object StatsService : KoinComponent {
             title = "Exposed infant (all)"
         )
 
-        val data = fetchDataTest(client, listOf(newlyDiagnosed, alreadyOnArt, exposedInfants))
-        println(data)
+        return fetchDataTest(client, listOf(newlyDiagnosed, alreadyOnArt, exposedInfants))
     }
 }

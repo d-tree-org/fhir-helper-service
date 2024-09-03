@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  fhir-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "49100:4040"
+    environment:
+      - KEYCLOAK_ID:${KEYCLOAK_ID}
+      - KEYCLOAK_SECRET:${KEYCLOAK_SECRET}
+      - KEYCLOAK_ISSUER:${KEYCLOAK_ISSUER}
+      - KEYCLOAK_AUTHORIZE_TOKEN_URL:${KEYCLOAK_AUTHORIZE_TOKEN_URL}
+      - KEYCLOAK_ACCESS_TOKEN_URL:${KEYCLOAK_ACCESS_TOKEN_URL}
+      - KEYCLOAK_USERNAME:${KEYCLOAK_USERNAME}
+      - KEYCLOAK_PASSWORD:${KEYCLOAK_PASSWORD}
+      - FHIR_BASE_URL:${FHIR_BASE_URL}

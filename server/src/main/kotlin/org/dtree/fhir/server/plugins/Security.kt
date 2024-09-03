@@ -1,13 +1,13 @@
 package org.dtree.fhir.server.plugins
 
-import io.github.cdimascio.dotenv.dotenv
 import io.ktor.client.*
 import io.ktor.client.engine.apache.*
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
+import org.dtree.fhir.server.util.loadEnv
 
-val dotenv = dotenv()
+val dotenv = loadEnv()
 
 fun Application.configureSecurity() {
     authentication {

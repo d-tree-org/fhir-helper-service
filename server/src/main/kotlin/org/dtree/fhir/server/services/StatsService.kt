@@ -7,7 +7,7 @@ import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 
 object StatsService : KoinComponent {
-    val client by inject<FhirClient>()
+    private val client by inject<FhirClient>()
 
     suspend fun getFacilityStats(id: String): FacilityResultData {
         val locationFilter = filterByLocation(id)
@@ -28,6 +28,33 @@ object StatsService : KoinComponent {
             title = "Exposed infant (all)"
         )
 
-        return fetchDataTest(client, listOf(newlyDiagnosed, alreadyOnArt, exposedInfants))
+        return fetchDataTest(client, listOf(newlyDiagnosed, alreadyOnArt, exposedInfants)).let {
+            val group = it.groups.toMutableList()
+            group.add(
+                GroupedSummaryItem(
+                    groupKey = "visits",
+                    groupTitle = "Today's visits",
+                    summaries = listOf(
+                        SummaryItem("All", 0),
+                        SummaryItem("Already on Art", 0),
+                        SummaryItem("Newly diagnosed", 0),
+                        SummaryItem("Exposed Infant", 0),
+                    ),
+                )
+            )
+            group.add(
+                GroupedSummaryItem(
+                    groupKey = "tasks",
+                    groupTitle = "Today's Tasks",
+                    summaries = listOf(
+                        SummaryItem("Milestone", 0),
+                        SummaryItem("Viral Load Collected", 0),
+                    ),
+                )
+            )
+           it.copy(
+                groups = group
+            )
+        }
     }
 }

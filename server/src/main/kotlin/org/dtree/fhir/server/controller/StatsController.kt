@@ -1,6 +1,6 @@
 package org.dtree.fhir.server.controller
 
-import org.dtree.fhir.server.services.ResultData
+import org.dtree.fhir.server.services.FacilityResultData
 import org.dtree.fhir.server.services.StatsService
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
@@ -8,11 +8,11 @@ import org.koin.core.component.inject
 class StatsControllerImpl : StatsController, BaseController(), KoinComponent {
     private val statsService by inject<StatsService>()
 
-    override suspend fun getStats(id: String): ResultData {
+    override suspend fun getStats(id: String): FacilityResultData {
         return statsService.getFacilityStats(id)
     }
 }
 
 interface  StatsController {
-    suspend fun getStats(id: String): ResultData
+    suspend fun getStats(id: String): FacilityResultData
 }

@@ -20,7 +20,7 @@ enum class PatientType(val value: String) {
     }
 }
 
-suspend fun fetchDataTest(client: FhirClient, actions: List<FilterFormData>): ResultData {
+suspend fun fetchDataTest(client: FhirClient, actions: List<FilterFormData>): FacilityResultData {
     val requests = mutableListOf<Bundle.BundleEntryRequestComponent>()
     for (data in actions) {
         val filters = data.filters.map { filter ->
@@ -62,7 +62,17 @@ suspend fun fetchDataTest(client: FhirClient, actions: List<FilterFormData>): Re
             )
         )
     }
-    return ResultData(summaries, LocalDate.now())
+    return FacilityResultData(summaries.map {
+        GroupedSummaryItem(
+            groupKey = it.key,
+            groupTitle = mapKeyToTitle(it.key),
+            summaries = it.value,
+        )
+    }, LocalDate.now())
+}
+
+fun mapKeyToTitle(key: String): String {
+    return "Totals"
 }
 
 fun createFilter(filter: FilterFormItem): List<Pair<String, String>> {

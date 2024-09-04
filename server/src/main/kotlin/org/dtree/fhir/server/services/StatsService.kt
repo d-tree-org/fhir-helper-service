@@ -9,7 +9,7 @@ import org.koin.core.component.inject
 object StatsService : KoinComponent {
     val client by inject<FhirClient>()
 
-    suspend fun getFacilityStats(id: String): ResultData {
+    suspend fun getFacilityStats(id: String): FacilityResultData {
         val locationFilter = filterByLocation(id)
         val baseFilters = listOf(locationFilter)
 

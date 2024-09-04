@@ -28,6 +28,7 @@ node_modules/
 # Ignore the Dockerfile and .dockerignore themselves
 Dockerfile
 .dockerignore
+docker-compose.yml
 
 # Ignore any other unnecessary files
 .env

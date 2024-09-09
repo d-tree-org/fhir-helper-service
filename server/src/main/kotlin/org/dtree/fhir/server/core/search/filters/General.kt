@@ -71,16 +71,18 @@ fun addPatientFilter(patients: List<PatientType>, inSubject: Boolean = false): F
 fun questionnaireResponseFilters(
     questionnaire: String,
     baseFilters: List<FilterFormItem>,
-    hasCount: Boolean = true
+    hasCount: Boolean = true,
+     customParser: ((Bundle) -> Int)? = null
 ): FilterFormData {
     val filters = mutableListOf(*baseFilters.toTypedArray())
     if (hasCount) {
         filters.add(filterSummary())
     }
     return FilterFormData(
-        resource = ResourceType.Patient.name,
+        resource = ResourceType.QuestionnaireResponse.name,
         filterId = "questionnaire-${questionnaire}",
-        filters = baseFilters
+        filters = filters,
+        customParser = customParser,
     )
 }
 

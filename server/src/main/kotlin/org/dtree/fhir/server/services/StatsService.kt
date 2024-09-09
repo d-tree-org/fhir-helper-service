@@ -1,8 +1,10 @@
 package org.dtree.fhir.server.services
 
 import org.dtree.fhir.core.uploader.general.FhirClient
+import org.dtree.fhir.server.core.search.filters.addPatientFilter
 import org.dtree.fhir.server.core.search.filters.filterByLocation
 import org.dtree.fhir.server.core.search.filters.patientTypeFilter
+import org.dtree.fhir.server.core.search.filters.questionnaireResponseFilters
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 
@@ -28,33 +30,51 @@ object StatsService : KoinComponent {
             title = "Exposed infant (all)"
         )
 
-        return fetchDataTest(client, listOf(newlyDiagnosed, alreadyOnArt, exposedInfants)).let {
-            val group = it.groups.toMutableList()
-            group.add(
-                GroupedSummaryItem(
-                    groupKey = "visits",
-                    groupTitle = "Today's visits",
-                    summaries = listOf(
-                        SummaryItem("All", 0),
-                        SummaryItem("Already on Art", 0),
-                        SummaryItem("Newly diagnosed", 0),
-                        SummaryItem("Exposed Infant", 0),
-                    ),
-                )
+        val allVisits = questionnaireResponseFilters("patient-finish-visit", baseFilters).copy(
+            groupId = "visits",
+            title = "All finish visits"
+        )
+
+        val allVisitsExposed = questionnaireResponseFilters(
+            "patient-finish-visit",
+            (baseFilters + addPatientFilter(listOf(PatientType.EXPOSED_INFANT), inSubject = true))
+        ).copy(
+            groupId = "visits",
+            title = "All finish visits"
+        )
+
+        val allVisitsArt = questionnaireResponseFilters(
+            "patient-finish-visit",
+            (baseFilters + addPatientFilter(listOf(PatientType.EXPOSED_INFANT), inSubject = true))
+        ).copy(
+            groupId = "visits",
+            title = "All finish visits"
+        )
+
+        val allVisitsNewly = questionnaireResponseFilters(
+            "patient-finish-visit",
+            (baseFilters + addPatientFilter(listOf(PatientType.EXPOSED_INFANT), inSubject = true))
+        ).copy(
+            groupId = "visits",
+            title = "All finish visits"
+        )
+
+        val milestone = questionnaireResponseFilters("exposed-infant-milestone-hiv-test", baseFilters).copy(
+            groupId = "tasks",
+            title = "Milestone conducted"
+        )
+
+        val viralLoad = questionnaireResponseFilters("art-client-viral-load-collection", baseFilters).copy(
+            groupId = "tasks",
+            title = "Viral Load Collected"
+        )
+
+        return fetchDataTest(
+            client, listOf(
+                newlyDiagnosed, alreadyOnArt, exposedInfants,
+                allVisits, allVisitsExposed, allVisitsNewly, allVisitsArt,
+                milestone, viralLoad
             )
-            group.add(
-                GroupedSummaryItem(
-                    groupKey = "tasks",
-                    groupTitle = "Today's Tasks",
-                    summaries = listOf(
-                        SummaryItem("Milestone", 0),
-                        SummaryItem("Viral Load Collected", 0),
-                    ),
-                )
-            )
-           it.copy(
-                groups = group
-            )
-        }
+        )
     }
 }

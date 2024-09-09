@@ -72,7 +72,11 @@ suspend fun fetchDataTest(client: FhirClient, actions: List<FilterFormData>): Fa
 }
 
 fun mapKeyToTitle(key: String): String {
-    return "Totals"
+    return when (key) {
+        "visits" -> "Today's visits"
+        "tasks" -> "Today's Tasks"
+        else -> "Totals"
+    }
 }
 
 fun createFilter(filter: FilterFormItem): List<Pair<String, String>> {

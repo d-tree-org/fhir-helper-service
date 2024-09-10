@@ -8,6 +8,7 @@ import org.dtree.fhir.server.core.search.filters.PredefinedFilters
 import org.hl7.fhir.r4.model.Bundle
 import org.hl7.fhir.r4.model.QuestionnaireResponse
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import kotlin.collections.set
 import kotlin.random.Random
@@ -49,10 +50,12 @@ suspend fun fetchDataTest(client: FhirClient, actions: List<FilterFormData>): Fa
     val summaries = mutableMapOf<String, ArrayList<SummaryItem>>()
     resultBundle.entry.forEachIndexed { idx, entry ->
         val filter = actions[idx]
-        val value = if ((entry.resource as Bundle).hasTotal()) {
+
+        val value = if (filter.customParser == null) {
             (entry.resource as Bundle).total
         } else {
-            filter.customParser?.invoke((entry.resource as Bundle)) ?: throw Exception("Pass a custom parser")
+            filter.customParser.invoke((entry.resource as Bundle))
+                ?: throw Exception("Pass a custom parser " + filter.filterId)
         }
         val groupKey = filter.groupId ?: defaultGroupId
         val list = summaries.getOrPut(groupKey) { ArrayList() }
@@ -62,17 +65,28 @@ suspend fun fetchDataTest(client: FhirClient, actions: List<FilterFormData>): Fa
             )
         )
     }
-    return FacilityResultData(summaries.map {
-        GroupedSummaryItem(
-            groupKey = it.key,
-            groupTitle = mapKeyToTitle(it.key),
-            summaries = it.value,
-        )
-    }, LocalDate.now())
+
+    return FacilityResultData(
+        groups = summaries.map {
+            val group = mapKeyToTitle(it.key)
+            GroupedSummaryItem(
+                groupKey = it.key,
+                groupTitle = group.first,
+                summaries = it.value,
+                order = group.second,
+            )
+        },
+        date = LocalDate.now(), generatedDate = LocalDateTime.now(),
+    )
 }
 
-fun mapKeyToTitle(key: String): String {
-    return "Totals"
+fun mapKeyToTitle(key: String): Pair<String, Int> {
+    return when (key) {
+        "visits" -> Pair("Today's visits", 1)
+        "tasks" -> Pair("Today's Tasks", 2)
+        "newPatients" -> Pair("New clients today", 3)
+        else -> Pair("Facility Patient totals", 0)
+    }
 }
 
 fun createFilter(filter: FilterFormItem): List<Pair<String, String>> {

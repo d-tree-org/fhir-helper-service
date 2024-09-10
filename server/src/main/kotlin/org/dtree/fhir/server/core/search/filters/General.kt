@@ -6,7 +6,6 @@ import org.hl7.fhir.r4.model.Bundle
 import org.hl7.fhir.r4.model.QuestionnaireResponse
 import org.hl7.fhir.r4.model.ResourceType
 import java.time.LocalDate
-import java.util.*
 
 fun filterByLocation(location: String) = filterByPredefined(
     id = "filter-by-location", template = "_tag_location",
@@ -54,10 +53,10 @@ fun filterSummary() = FilterFormItem(
     )
 )
 
-fun addPatientFilter(patients: List<PatientType>): FilterFormItem {
+fun addPatientFilter(patients: List<PatientType>, inSubject: Boolean = false): FilterFormItem {
     return FilterFormItem(
         filterId = "patient_filter",
-        template = "_tag=https://d-tree.org/fhir/patient-meta-tag|{value}",
+        template = if (inSubject) "subject:Patient._tag=https://d-tree.org/fhir/patient-meta-tag|{value}" else "_tag=https://d-tree.org/fhir/patient-meta-tag|{value}",
         filterType = FilterTemplateType.template,
         params = listOf(
             FilterFormParamData(
@@ -69,21 +68,27 @@ fun addPatientFilter(patients: List<PatientType>): FilterFormItem {
     )
 }
 
-fun questionnaireResponseFilters(questionnaire: String, baseFilters: List<FilterFormItem>, hasCount: Boolean = true): FilterFormData {
+fun questionnaireResponseFilters(
+    questionnaire: String,
+    baseFilters: List<FilterFormItem>,
+    hasCount: Boolean = true,
+     customParser: ((Bundle) -> Int)? = null
+): FilterFormData {
     val filters = mutableListOf(*baseFilters.toTypedArray())
     if (hasCount) {
         filters.add(filterSummary())
     }
     return FilterFormData(
-        resource = ResourceType.Patient.name,
+        resource = ResourceType.QuestionnaireResponse.name,
         filterId = "questionnaire-${questionnaire}",
-        filters = baseFilters
+        filters = filters,
+        customParser = customParser,
     )
 }
 
 fun questionnaireResponseFilter(bundle: Bundle, filterKey: String): Int {
     val items = bundle.entry.map { it.resource as QuestionnaireResponse }.distinctBy { it.subject.reference }
-  return  items.filter { quest ->
-        quest.item.find { it.linkId ==  filterKey }?.answer?.firstOrNull()?.valueBooleanType?.value ?: false
+    return items.filter { quest ->
+        quest.item.find { it.linkId == filterKey }?.answer?.firstOrNull()?.valueBooleanType?.value ?: false
     }.size
 }

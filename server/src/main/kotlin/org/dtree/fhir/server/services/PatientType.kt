@@ -51,10 +51,10 @@ suspend fun fetchDataTest(client: FhirClient, actions: List<FilterFormData>): Fa
     resultBundle.entry.forEachIndexed { idx, entry ->
         val filter = actions[idx]
 
-        val value = if ((entry.resource as Bundle).hasTotal()) {
+        val value = if (filter.customParser == null) {
             (entry.resource as Bundle).total
         } else {
-            filter.customParser?.invoke((entry.resource as Bundle))
+            filter.customParser.invoke((entry.resource as Bundle))
                 ?: throw Exception("Pass a custom parser " + filter.filterId)
         }
         val groupKey = filter.groupId ?: defaultGroupId
@@ -84,6 +84,7 @@ fun mapKeyToTitle(key: String): Pair<String, Int> {
     return when (key) {
         "visits" -> Pair("Today's visits", 1)
         "tasks" -> Pair("Today's Tasks", 2)
+        "newPatients" -> Pair("New clients today", 3)
         else -> Pair("Facility Patient totals", 0)
     }
 }

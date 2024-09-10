@@ -12,29 +12,55 @@ object StatsService : KoinComponent {
     suspend fun getFacilityStats(id: String): FacilityResultData {
         val locationFilter = filterByLocation(id)
         val dateFilter = filterByDateCreated(LocalDate.now())
-        val baseAllFilters = listOf(locationFilter)
+        val baseFiltersWithoutDates = listOf(locationFilter)
         val baseFilters = listOf(locationFilter, dateFilter)
 
         val newlyDiagnosed =
-            patientTypeFilter(patients = listOf(PatientType.NEWLY_DIAGNOSED_CLIENT), baseFilters = baseAllFilters).copy(
+            patientTypeFilter(
+                patients = listOf(PatientType.NEWLY_DIAGNOSED_CLIENT),
+                baseFilters = baseFiltersWithoutDates
+            ).copy(
                 groupId = "totals",
                 title = "Newly diagnosed clients"
             )
         val alreadyOnArt =
-            patientTypeFilter(patients = listOf(PatientType.CLIENT_ALREADY_ON_ART), baseFilters = baseAllFilters).copy(
+            patientTypeFilter(
+                patients = listOf(PatientType.CLIENT_ALREADY_ON_ART),
+                baseFilters = baseFiltersWithoutDates
+            ).copy(
                 groupId = "totals",
                 title = "Already on Art"
             )
         val exposedInfants =
-            patientTypeFilter(patients = listOf(PatientType.EXPOSED_INFANT), baseFilters = baseAllFilters).copy(
+            patientTypeFilter(
+                patients = listOf(PatientType.EXPOSED_INFANT),
+                baseFilters = baseFiltersWithoutDates
+            ).copy(
                 groupId = "totals",
+                title = "Exposed infant"
+            )
+
+        val newNewlyDiagnosed =
+            patientTypeFilter(patients = listOf(PatientType.NEWLY_DIAGNOSED_CLIENT), baseFilters = baseFilters).copy(
+                groupId = "newPatients",
+                title = "Newly diagnosed clients"
+            )
+        val newAlreadyOnArt =
+            patientTypeFilter(patients = listOf(PatientType.CLIENT_ALREADY_ON_ART), baseFilters = baseFilters).copy(
+                groupId = "newPatients",
+                title = "Already on Art"
+            )
+        val newExposedInfants =
+            patientTypeFilter(patients = listOf(PatientType.EXPOSED_INFANT), baseFilters = baseFilters).copy(
+                groupId = "newPatients",
                 title = "Exposed infant"
             )
 
         val allVisits = questionnaireResponseFilters(
             questionnaire = "patient-finish-visit",
             baseFilters = baseFilters,
-            hasCount = true
+            hasCount = false,
+            customParser = { uniquePatientQuestionnaireParser(it) }
         ).copy(
             groupId = "visits",
             title = "All finish visits"
@@ -47,10 +73,11 @@ object StatsService : KoinComponent {
                     inSubject = true
                 )
             )),
-            hasCount = true,
+            hasCount = false,
+            customParser = { uniquePatientQuestionnaireParser(it) }
         ).copy(
             groupId = "visits",
-            title = "All finish visits",
+            title = "Exposed Infants visits",
             filterId = "patient-finish-visit-exposed-infant",
         )
         val allVisitsArt = questionnaireResponseFilters(
@@ -61,10 +88,11 @@ object StatsService : KoinComponent {
                     inSubject = true
                 )
             )),
-            hasCount = true,
+            hasCount = false,
+            customParser = { uniquePatientQuestionnaireParser(it) }
         ).copy(
             groupId = "visits",
-            title = "All finish visits",
+            title = "Client Already on Art visits",
             filterId = "patient-finish-visit-CLIENT_ALREADY_ON_ART",
         )
 
@@ -76,10 +104,11 @@ object StatsService : KoinComponent {
                     inSubject = true
                 )
             )),
-            hasCount = true,
+            hasCount = false,
+            customParser = { uniquePatientQuestionnaireParser(it) }
         ).copy(
             groupId = "visits",
-            title = "All finish visits",
+            title = "Newly Diagnosed visits",
             filterId = "patient-finish-visit-NEWLY_DIAGNOSED_CLIENT"
         )
 
@@ -111,6 +140,7 @@ object StatsService : KoinComponent {
         return fetchDataTest(
             client, listOf(
                 newlyDiagnosed, alreadyOnArt, exposedInfants,
+                newExposedInfants, newNewlyDiagnosed, newAlreadyOnArt,
                 allVisits, allVisitsExposed, allVisitsNewly, allVisitsArt,
                 milestone, viralLoad
             )

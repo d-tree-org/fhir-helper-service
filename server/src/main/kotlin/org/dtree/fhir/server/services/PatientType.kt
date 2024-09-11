@@ -71,21 +71,22 @@ suspend fun fetchDataTest(client: FhirClient, actions: List<FilterFormData>): Fa
             val group = mapKeyToTitle(it.key)
             GroupedSummaryItem(
                 groupKey = it.key,
-                groupTitle = group.first,
+                groupTitle = group.title,
                 summaries = it.value,
-                order = group.second,
+                order = group.order,
+                startCollapsed = group.startCollapsed,
             )
         },
         date = LocalDate.now(), generatedDate = LocalDateTime.now(),
     )
 }
 
-fun mapKeyToTitle(key: String): Pair<String, Int> {
+fun mapKeyToTitle(key: String): GroupMeta {
     return when (key) {
-        "visits" -> Pair("Today's visits", 1)
-        "tasks" -> Pair("Today's Tasks", 2)
-        "newPatients" -> Pair("New clients today", 3)
-        else -> Pair("Facility Patient totals", 0)
+        "visits" -> GroupMeta("Today's visits", 1)
+        "tasks" -> GroupMeta("Today's Tasks", 2)
+        "newPatients" -> GroupMeta("New clients today", 3)
+        else -> GroupMeta("Facility Patient totals", 0, true)
     }
 }
 

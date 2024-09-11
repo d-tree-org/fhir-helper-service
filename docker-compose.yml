@@ -6,6 +6,7 @@ services:
     ports:
       - "49100:4040"
     environment:
+      - TZ:"Africa/Blantyre"
       - KEYCLOAK_ID:${KEYCLOAK_ID}
       - KEYCLOAK_SECRET:${KEYCLOAK_SECRET}
       - KEYCLOAK_ISSUER:${KEYCLOAK_ISSUER}

@@ -15,6 +15,7 @@ RUN gradle :server:buildFatJar --no-daemon
 
 # Stage 3: Create the Runtime Image
 FROM amazoncorretto:22 AS runtime
+ENV TZ="Africa/Blantyre"
 EXPOSE 4040
 RUN mkdir /app
 COPY --from=build /usr/src/app/server/build/libs/*.jar /app/ktor-app.jar

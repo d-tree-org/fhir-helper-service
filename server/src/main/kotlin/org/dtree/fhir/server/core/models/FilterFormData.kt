@@ -1,5 +1,6 @@
 package org.dtree.fhir.server.core.models
 
+import org.dtree.fhir.server.services.formatDate
 import org.hl7.fhir.r4.model.Bundle
 import java.time.LocalDate
 
@@ -25,7 +26,17 @@ data class FilterFormParamData(
     val value: String? = null,
     val valueDate: LocalDate? = null,
     val valueDateRange: DateRange? = null,
-)
+) {
+    fun valueString(): String? {
+        if (type == FilterParamType.string) {
+            return value
+        } else if (type == FilterParamType.date) {
+            return valueDate?.let { formatDate(it, true) }
+        } else {
+            return valueDateRange?.toString()
+        }
+    }
+}
 
 data class DateRange(
     val from: LocalDate?,

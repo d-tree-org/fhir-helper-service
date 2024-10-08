@@ -26,6 +26,17 @@ fun filterByDateCreated(dateCreated: LocalDate) = filterByPredefined(
     ),
 )
 
+fun filterByDate(date: LocalDate) = FilterFormItem(
+    filterId = "filter-by-date-created",
+    template = "date={date}",
+    filterType = FilterTemplateType.template,
+    params = listOf(
+        FilterFormParamData(
+            name = "date", type = FilterParamType.date, valueDate = date
+        )
+    ),
+)
+
 fun filterByDateCreatedRange(date: DateRange) = filterByPredefined(
     id = "filter-by-date-created-range",
     template = "filter-by-date-created-range",
@@ -49,6 +60,32 @@ fun filterSummary() = FilterFormItem(
             name = "value",
             type = FilterParamType.string,
             value = "count"
+        )
+    )
+)
+
+fun filterAddCount(count: Int) = FilterFormItem(
+    filterId = "_count",
+    template = "_count={value}",
+    filterType = FilterTemplateType.template,
+    params = listOf(
+        FilterFormParamData(
+            name = "value",
+            type = FilterParamType.string,
+            value = count.toString()
+        )
+    )
+)
+
+fun filterRevInclude() = FilterFormItem(
+    filterId = "_include",
+    template = "_include={value}",
+    filterType = FilterTemplateType.template,
+    params = listOf(
+        FilterFormParamData(
+            name = "value",
+            type = FilterParamType.string,
+            value = "Appointment:patient"
         )
     )
 )

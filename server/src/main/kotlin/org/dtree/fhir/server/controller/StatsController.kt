@@ -1,7 +1,7 @@
 package org.dtree.fhir.server.controller
 
-import org.dtree.fhir.server.services.FacilityResultData
-import org.dtree.fhir.server.services.StatsService
+import org.dtree.fhir.server.services.stats.FacilityResultData
+import org.dtree.fhir.server.services.stats.StatsService
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 

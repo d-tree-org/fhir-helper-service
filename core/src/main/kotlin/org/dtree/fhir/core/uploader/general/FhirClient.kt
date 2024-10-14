@@ -20,6 +20,7 @@ import okhttp3.Response
 import okhttp3.logging.HttpLoggingInterceptor
 import org.hl7.fhir.instance.model.api.IBaseBundle
 import org.hl7.fhir.instance.model.api.IBaseResource
+import org.hl7.fhir.r4.model.Appointment
 import org.hl7.fhir.r4.model.Bundle
 import org.hl7.fhir.r4.model.Resource
 import java.net.URL
@@ -105,6 +106,16 @@ class FhirClient(private val dotenv: Dotenv, private val iParser: IParser) {
             }
         )
         return client.transaction().withBundle(bundle).execute()
+    }
+
+    fun fetchResourcesFromList(ids: List<String>): Bundle {
+        Appointment.AppointmentStatus.WAITLIST
+       val item = Bundle.BundleEntryRequestComponent().apply {
+            method = Bundle.HTTPVerb.GET
+            url = "Appointment?patient=${ids.joinToString(",")}&status=${listOf("waitlist", "booked", "noshow").joinToString(",")}&_count=20000"
+            id = "filter"
+        }
+        return fetchBundle(listOf(item)).entry.first().resource as Bundle
     }
 
     suspend fun bundleUpload(

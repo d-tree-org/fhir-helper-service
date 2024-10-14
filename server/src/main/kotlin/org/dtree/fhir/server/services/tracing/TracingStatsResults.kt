@@ -14,8 +14,10 @@ data class TracingResult(
     val id: String?,
     val name: String,
     val dateAdded: LocalDate?,
+    val nextAppointment: LocalDate?,
     val type: List<String>,
-    val reasons: List<String>
+    val reasons: List<String>,
+    val isFutureAppointment: Boolean?
 )
 
 data class TracingListResults(

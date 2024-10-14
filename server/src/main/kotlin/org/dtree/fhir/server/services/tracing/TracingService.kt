@@ -1,5 +1,6 @@
 package org.dtree.fhir.server.services.tracing
 
+import com.ibm.icu.text.MessagePattern.ApostropheMode
 import org.dtree.fhir.core.uploader.general.FhirClient
 import org.dtree.fhir.core.utils.logicalId
 import org.dtree.fhir.server.core.models.*
@@ -92,6 +93,21 @@ object TracingService : KoinComponent {
                 map[patient.logicalId] = Temp(listOf(result.main as Task), patient)
             }
         }
+        val allPatientsToFetch = map.keys
+        val appointmentMap = mutableMapOf<String, Appointment>()
+        val appointmentBundle = client.fetchResourcesFromList(allPatientsToFetch.toList())
+        appointmentBundle.entry.forEach { entry ->
+            val appointment = entry.resource as Appointment
+            if (appointment.hasStart() && appointment.hasParticipant() && (appointment.status == Appointment.AppointmentStatus.BOOKED ||
+                        appointment.status == Appointment.AppointmentStatus.WAITLIST ||
+                        appointment.status == Appointment.AppointmentStatus.NOSHOW)
+            ) {
+                val patient =
+                    appointment.participant.first { it.actor.reference.contains("Patient") }.actor.reference.split("/")
+                        .last()
+                appointmentMap[patient] = appointment
+            }
+        }
         return TracingListResults(map.map { entry ->
             val mPatient = entry.value.patient
             val type = mutableSetOf<String>()
@@ -104,6 +120,8 @@ object TracingService : KoinComponent {
                 mDate = task.authoredOn?.toInstant()?.atZone(ZoneId.systemDefault())?.toLocalDate()
                 task.reasonCode.text
             }
+            val appointmentDate = appointmentMap[mPatient.logicalId]?.start?.toInstant()?.atZone(ZoneId.systemDefault())
+                ?.toLocalDate()
 
             TracingResult(
                 uuid = mPatient.logicalId,
@@ -111,7 +129,9 @@ object TracingService : KoinComponent {
                 name = mPatient.nameFirstRep.nameAsSingleString,
                 dateAdded = mDate,
                 type = type.toList(),
-                reasons = reasons
+                reasons = reasons,
+                nextAppointment = appointmentDate,
+                isFutureAppointment = appointmentDate?.isAfter(LocalDate.now())
             )
         }.distinctBy { it.uuid })
     }
@@ -181,6 +201,10 @@ fun handleIncludes(bundle: Bundle): List<ResultClass> {
         }
     }
     return final
+}
+
+fun fetchPatientFromList(ids: List<String>) {
+
 }
 
 data class Stuff(val uuid: String, val id: String?, val name: String, val date: LocalDate?)

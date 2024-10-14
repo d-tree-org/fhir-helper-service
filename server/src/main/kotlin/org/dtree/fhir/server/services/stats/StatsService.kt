@@ -1,7 +1,9 @@
-package org.dtree.fhir.server.services
+package org.dtree.fhir.server.services.stats
 
 import org.dtree.fhir.core.uploader.general.FhirClient
 import org.dtree.fhir.server.core.search.filters.*
+import org.dtree.fhir.server.services.PatientType
+import org.dtree.fhir.server.services.fetchDataTest
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import java.time.LocalDate

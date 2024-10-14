@@ -12,6 +12,7 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.server.routing.get
 import org.dtree.fhir.server.plugins.stats.statsModule
+import org.dtree.fhir.server.plugins.tracing.tracingModule
 
 fun Application.configureRouting() {
     install(Resources)
@@ -45,6 +46,7 @@ fun Application.configureRouting() {
         }
 
         statsModule()
+        tracingModule()
 
         get("/") {
             call.respondText("Hello, World!")

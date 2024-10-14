@@ -1,4 +1,4 @@
-package org.dtree.fhir.server.services
+package org.dtree.fhir.server.services.stats
 
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -21,5 +21,3 @@ data class SummaryItem(val name: String, val value: Int)
 
 
 data class GroupMeta(val title: String, val order: Int, val startCollapsed: Boolean = false,)
-
-data class ResultDataOld(val summaries: List<SummaryItem>, val date: List<String>?)

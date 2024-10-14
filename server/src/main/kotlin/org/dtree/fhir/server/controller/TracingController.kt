@@ -19,7 +19,9 @@ class TracingControllerImpl : TracingController, BaseController(), KoinComponent
     }
 
     override fun getTracingList(facilityId: String, date: LocalDate): TracingListResults {
-        return tracingService.getTracingList(facilityId, date)
+        val result = tracingService.getTracingList(facilityId, date)
+        println(result.results.size)
+        return  result
     }
 }
 

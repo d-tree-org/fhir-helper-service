@@ -12,6 +12,7 @@ import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import java.time.LocalDate
 import java.time.ZoneId
+import java.time.ZonedDateTime
 
 object TracingService : KoinComponent {
     private val client by inject<FhirClient>()
@@ -71,23 +72,52 @@ object TracingService : KoinComponent {
         val filter = FilterFormData(
             resource = ResourceType.Task.name,
             filterId = "random_filter",
-            filters = listOf(filterAddCount(20000), filterRevInclude("Task:patient"), locationFilter, filterByActive, filterTracingTask)
+            filters = listOf(
+                filterAddCount(20000),
+                filterRevInclude("Task:patient"),
+                locationFilter,
+                filterByActive,
+                filterTracingTask
+            )
         )
 
         val results = fetch(client, listOf(filter))
-        return TracingListResults(results.map {
-            val mPatient = (it.include as Patient)
-            val appointment = it.main as Task
-            val mDate = appointment.executionPeriod.start?.toInstant()?.atZone(ZoneId.systemDefault())?.toLocalDate()
-            Stuff(
+        val map = mutableMapOf<String, Temp>()
+        results.forEach { result ->
+            val patient = result.include as Patient
+            if (map.contains(patient.logicalId)) {
+                val item = map[patient.logicalId]!!
+                map[patient.logicalId] = (item.copy(tasks = item.tasks + listOf(result.main as Task)))
+            } else {
+                map[patient.logicalId] = Temp(listOf(result.main as Task), patient)
+            }
+        }
+        return TracingListResults(map.map { entry ->
+            val mPatient = entry.value.patient
+            val type = mutableSetOf<String>()
+            var mDate: LocalDate? = null
+            val reasons = entry.value.tasks.map { task ->
+                println(task.logicalId)
+                task.meta.tag.firstOrNull { tag -> tag.system == "https://d-tree.org/fhir/contact-tracing" }?.code?.let {
+                    type.add(it)
+                }
+                mDate = task.authoredOn?.toInstant()?.atZone(ZoneId.systemDefault())?.toLocalDate()
+                task.reasonCode.text
+            }
+
+            TracingResult(
                 uuid = mPatient.logicalId,
                 id = mPatient.extractOfficialIdentifier(),
                 name = mPatient.nameFirstRep.nameAsSingleString,
-                date = mDate
+                dateAdded = mDate,
+                type = type.toList(),
+                reasons = reasons
             )
         }.distinctBy { it.uuid })
     }
 }
+
+data class Temp(val tasks: List<Task>, val patient: Patient)
 
 fun fetch(client: FhirClient, actions: List<FilterFormData>): MutableList<ResultClass> {
     val requests = mutableListOf<Bundle.BundleEntryRequestComponent>()
@@ -144,7 +174,7 @@ fun handleIncludes(bundle: Bundle): List<ResultClass> {
                     resource.participant.first { it.actor.reference.contains("Patient") }.actor.reference.split("/")
                         .last()
                 includes[patient] = resource.logicalId
-            } else if(resource is Task) {
+            } else if (resource is Task) {
                 val patient = resource.`for`.reference.split("/").last()
                 includes[patient] = resource.logicalId
             }

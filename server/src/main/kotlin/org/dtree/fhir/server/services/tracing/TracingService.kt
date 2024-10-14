@@ -134,6 +134,9 @@ fun handleIncludes(bundle: Bundle): List<ResultClass> {
                     resource.participant.first { it.actor.reference.contains("Patient") }.actor.reference.split("/")
                         .last()
                 includes[patient] = resource.logicalId
+            } else if(resource is Task) {
+                val patient = resource.`for`.reference.split("/").last()
+                includes[patient] = resource.logicalId
             }
         }
     }

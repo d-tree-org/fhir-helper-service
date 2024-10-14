@@ -66,7 +66,7 @@ object TracingService : KoinComponent {
         val filter = FilterFormData(
             resource = ResourceType.Task.name,
             filterId = "random_filter",
-            filters = listOf(filterAddCount(20000), filterRevInclude("Task:for"), locationFilter, filterByActive, filterTracingTask)
+            filters = listOf(filterAddCount(20000), filterRevInclude("Task:patient"), locationFilter, filterByActive, filterTracingTask)
         )
 
         val results = fetch(client, listOf(filter))

@@ -38,7 +38,6 @@ object TracingService : KoinComponent {
     }
 
     fun getTracingList(facilityId: String, date: LocalDate): TracingListResults {
-        val dateFilter = filterByDate(date)
         val locationFilter = filterByLocation(facilityId)
         val filterByActive = FilterFormItem(
             filterId = "filter-by-task-status",
@@ -47,15 +46,27 @@ object TracingService : KoinComponent {
             params = listOf(
                 FilterFormParamData(
                     name = "status",
-                    type = FilterParamType.select,
+                    type = FilterParamType.string,
                     value = listOf("ready", "in-progress").joinToString(",")
+                )
+            ),
+        )
+        val filterTracingTask = FilterFormItem(
+            filterId = "filter-by-task-tracing-code",
+            template = "code={code}",
+            filterType = FilterTemplateType.template,
+            params = listOf(
+                FilterFormParamData(
+                    name = "code",
+                    type = FilterParamType.string,
+                    value = "225368008"
                 )
             ),
         )
         val filter = FilterFormData(
             resource = ResourceType.Task.name,
             filterId = "random_filter",
-            filters = listOf(dateFilter, filterAddCount(20000), filterRevInclude(), locationFilter, filterByActive)
+            filters = listOf(filterAddCount(20000), filterRevInclude("Task:for"), locationFilter, filterByActive, filterTracingTask)
         )
 
         val results = fetch(client, listOf(filter))

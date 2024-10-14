@@ -6,3 +6,7 @@ class TracingStatsResults {
 data class AppointmentListResults(
    val results: List<Stuff>
 )
+
+data class TracingListResults(
+   val results: List<Stuff>
+)

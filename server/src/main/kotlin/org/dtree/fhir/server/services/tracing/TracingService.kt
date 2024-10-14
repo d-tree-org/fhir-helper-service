@@ -2,8 +2,7 @@ package org.dtree.fhir.server.services.tracing
 
 import org.dtree.fhir.core.uploader.general.FhirClient
 import org.dtree.fhir.core.utils.logicalId
-import org.dtree.fhir.server.core.models.FilterFormData
-import org.dtree.fhir.server.core.models.FilterTemplateType
+import org.dtree.fhir.server.core.models.*
 import org.dtree.fhir.server.core.search.filters.*
 import org.dtree.fhir.server.services.QueryParam
 import org.dtree.fhir.server.services.createFilter
@@ -29,11 +28,47 @@ object TracingService : KoinComponent {
             filters = listOf(dateFilter, filterAddCount(20000), filterRevInclude(), locationFilter)
         )
 
-        return fetch(client, listOf(filter))
+        val results = fetch(client, listOf(filter))
+        return AppointmentListResults(results.map {
+            val mPatient = (it.include as Patient)
+            val appointment = it.main as Appointment
+            val mDate = appointment.start?.toInstant()?.atZone(ZoneId.systemDefault())?.toLocalDate()
+            Stuff(mPatient.nameFirstRep.nameAsSingleString, mPatient.extractOfficialIdentifier(), mDate)
+        })
+    }
+
+    fun getTracingList(facilityId: String, date: LocalDate): TracingListResults {
+        val dateFilter = filterByDate(date)
+        val locationFilter = filterByLocation(facilityId)
+        val filterByActive = FilterFormItem(
+            filterId = "filter-by-task-status",
+            template = "status={status}",
+            filterType = FilterTemplateType.template,
+            params = listOf(
+                FilterFormParamData(
+                    name = "status",
+                    type = FilterParamType.select,
+                    value = listOf("ready", "in-progress").joinToString(",")
+                )
+            ),
+        )
+        val filter = FilterFormData(
+            resource = ResourceType.Task.name,
+            filterId = "random_filter",
+            filters = listOf(dateFilter, filterAddCount(20000), filterRevInclude(), locationFilter, filterByActive)
+        )
+
+        val results = fetch(client, listOf(filter))
+        return TracingListResults(results.map {
+            val mPatient = (it.include as Patient)
+            val appointment = it.main as Task
+            val mDate = appointment.executionPeriod.start?.toInstant()?.atZone(ZoneId.systemDefault())?.toLocalDate()
+            Stuff(mPatient.nameFirstRep.nameAsSingleString, mPatient.extractOfficialIdentifier(), mDate)
+        })
     }
 }
 
-fun fetch(client: FhirClient, actions: List<FilterFormData>): AppointmentListResults {
+fun fetch(client: FhirClient, actions: List<FilterFormData>): MutableList<ResultClass> {
     val requests = mutableListOf<Bundle.BundleEntryRequestComponent>()
     val results = mutableListOf<ResultClass>()
     for (data in actions) {
@@ -67,12 +102,7 @@ fun fetch(client: FhirClient, actions: List<FilterFormData>): AppointmentListRes
             results.addAll(handleIncludes(resource))
         }
     }
-    return AppointmentListResults(results.map {
-        var patient = (it.include as Patient)
-        val appointment = it.main as Appointment
-        val date = appointment.start?.toInstant()?.atZone(ZoneId.systemDefault())?.toLocalDate()
-        Stuff(patient.nameFirstRep.nameAsSingleString, patient.extractOfficialIdentifier(), date)
-    })
+    return results
 }
 
 fun handleIncludes(bundle: Bundle): List<ResultClass> {

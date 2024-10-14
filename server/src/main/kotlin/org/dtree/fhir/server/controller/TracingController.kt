@@ -1,6 +1,7 @@
 package org.dtree.fhir.server.controller
 
 import org.dtree.fhir.server.services.tracing.AppointmentListResults
+import org.dtree.fhir.server.services.tracing.TracingListResults
 import org.dtree.fhir.server.services.tracing.TracingService
 import org.dtree.fhir.server.services.tracing.TracingStatsResults
 import org.koin.core.component.KoinComponent
@@ -16,10 +17,15 @@ class TracingControllerImpl : TracingController, BaseController(), KoinComponent
     override fun getAppointmentList(facilityId: String, date: LocalDate): AppointmentListResults {
         return tracingService.getAppointmentList(facilityId, date)
     }
+
+    override fun getTracingList(facilityId: String, date: LocalDate): TracingListResults {
+        return tracingService.getTracingList(facilityId, date)
+    }
 }
 
 interface TracingController {
     fun getStats(id: String): TracingStatsResults
 
     fun getAppointmentList(facilityId: String, date: LocalDate) : AppointmentListResults
+    fun getTracingList(facilityId: String, date: LocalDate) : TracingListResults
 }

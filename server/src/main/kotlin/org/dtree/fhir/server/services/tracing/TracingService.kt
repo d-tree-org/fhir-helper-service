@@ -33,7 +33,12 @@ object TracingService : KoinComponent {
             val mPatient = (it.include as Patient)
             val appointment = it.main as Appointment
             val mDate = appointment.start?.toInstant()?.atZone(ZoneId.systemDefault())?.toLocalDate()
-            Stuff(mPatient.nameFirstRep.nameAsSingleString, mPatient.extractOfficialIdentifier(), mDate)
+            Stuff(
+                uuid = mPatient.logicalId,
+                id = mPatient.extractOfficialIdentifier(),
+                name = mPatient.nameFirstRep.nameAsSingleString,
+                date = mDate
+            )
         })
     }
 
@@ -74,8 +79,13 @@ object TracingService : KoinComponent {
             val mPatient = (it.include as Patient)
             val appointment = it.main as Task
             val mDate = appointment.executionPeriod.start?.toInstant()?.atZone(ZoneId.systemDefault())?.toLocalDate()
-            Stuff(mPatient.nameFirstRep.nameAsSingleString, mPatient.extractOfficialIdentifier(), mDate)
-        })
+            Stuff(
+                uuid = mPatient.logicalId,
+                id = mPatient.extractOfficialIdentifier(),
+                name = mPatient.nameFirstRep.nameAsSingleString,
+                date = mDate
+            )
+        }.distinctBy { it.uuid })
     }
 }
 
@@ -143,6 +153,6 @@ fun handleIncludes(bundle: Bundle): List<ResultClass> {
     return final
 }
 
-data class Stuff(val name: String, val id: String?, val date: LocalDate?)
+data class Stuff(val uuid: String, val id: String?, val name: String, val date: LocalDate?)
 
 data class ResultClass(val main: Resource, val include: Resource)

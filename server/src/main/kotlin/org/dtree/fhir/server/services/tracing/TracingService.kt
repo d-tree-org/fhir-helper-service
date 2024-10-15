@@ -1,19 +1,18 @@
 package org.dtree.fhir.server.services.tracing
 
-import com.ibm.icu.text.MessagePattern.ApostropheMode
 import org.dtree.fhir.core.uploader.general.FhirClient
 import org.dtree.fhir.core.utils.logicalId
 import org.dtree.fhir.server.core.models.*
 import org.dtree.fhir.server.core.search.filters.*
 import org.dtree.fhir.server.services.QueryParam
 import org.dtree.fhir.server.services.createFilter
+import org.dtree.fhir.server.util.SystemConstants
 import org.dtree.fhir.server.util.extractOfficialIdentifier
 import org.hl7.fhir.r4.model.*
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import java.time.LocalDate
 import java.time.ZoneId
-import java.time.ZonedDateTime
 
 object TracingService : KoinComponent {
     private val client by inject<FhirClient>()
@@ -122,13 +121,18 @@ object TracingService : KoinComponent {
             }
             val appointmentDate = appointmentMap[mPatient.logicalId]?.start?.toInstant()?.atZone(ZoneId.systemDefault())
                 ?.toLocalDate()
-
+            val patientTypes =
+                mPatient.meta.tag
+                    .filter { it.system == SystemConstants.PATIENT_TYPE_FILTER_TAG_VIA_META_CODINGS_SYSTEM }
+                    .map { it.code }
+            val patientType: String = SystemConstants.getCodeByPriority(patientTypes) ?: patientTypes.first()
             TracingResult(
                 uuid = mPatient.logicalId,
                 id = mPatient.extractOfficialIdentifier(),
                 name = mPatient.nameFirstRep.nameAsSingleString,
                 dateAdded = mDate,
                 type = type.toList(),
+                patientType = patientType,
                 reasons = reasons,
                 nextAppointment = appointmentDate,
                 isFutureAppointment = appointmentDate?.isAfter(LocalDate.now())

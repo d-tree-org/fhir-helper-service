@@ -11,6 +11,8 @@ object ModulesInjection  {
         single<StatsController> { StatsControllerImpl() }
         single<TracingController> { TracingControllerImpl()  }
         single<AppointmentController> { AppointmentControllerImpl()  }
+        single<CarePlanController> { CarePlanControllerImpl()  }
+
         single<FhirClient> {  FhirClient(this.get<Dotenv>(), this.get<FhirProvider>().parser()) }
     }
 }

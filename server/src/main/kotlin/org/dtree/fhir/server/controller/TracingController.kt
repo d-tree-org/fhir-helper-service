@@ -14,10 +14,6 @@ class TracingControllerImpl : TracingController, BaseController(), KoinComponent
         return tracingService.getStats(id)
     }
 
-    override fun getAppointmentList(facilityId: String, date: LocalDate): AppointmentListResults {
-        return tracingService.getAppointmentList(facilityId, date)
-    }
-
     override fun getTracingList(facilityId: String, date: LocalDate): TracingListResults {
         val result = tracingService.getTracingList(facilityId, date)
         println(result.results.size)
@@ -28,6 +24,5 @@ class TracingControllerImpl : TracingController, BaseController(), KoinComponent
 interface TracingController {
     fun getStats(id: String): TracingStatsResults
 
-    fun getAppointmentList(facilityId: String, date: LocalDate) : AppointmentListResults
     fun getTracingList(facilityId: String, date: LocalDate) : TracingListResults
 }

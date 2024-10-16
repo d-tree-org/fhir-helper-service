@@ -20,29 +20,6 @@ object TracingService : KoinComponent {
         TODO("Not yet implemented")
     }
 
-    fun getAppointmentList(facilityId: String, date: LocalDate): AppointmentListResults {
-        val dateFilter = filterByDate(date)
-        val locationFilter = filterByLocation(facilityId)
-        val filter = FilterFormData(
-            resource = ResourceType.Appointment.name,
-            filterId = "random_filter",
-            filters = listOf(dateFilter, filterAddCount(20000), filterRevInclude(), locationFilter)
-        )
-
-        val results = fetch(client, listOf(filter))
-        return AppointmentListResults(results.map {
-            val mPatient = (it.include as Patient)
-            val appointment = it.main as Appointment
-            val mDate = appointment.start?.toInstant()?.atZone(ZoneId.systemDefault())?.toLocalDate()
-            Stuff(
-                uuid = mPatient.logicalId,
-                id = mPatient.extractOfficialIdentifier(),
-                name = mPatient.nameFirstRep.nameAsSingleString,
-                date = mDate
-            )
-        })
-    }
-
     fun getTracingList(facilityId: String, date: LocalDate): TracingListResults {
         val locationFilter = filterByLocation(facilityId)
         val filterByActive = FilterFormItem(

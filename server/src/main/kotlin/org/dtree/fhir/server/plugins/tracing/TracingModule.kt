@@ -17,13 +17,6 @@ fun Route.tracingModule() {
         call.respond(result)
     }
 
-    get<Tracing.Facility.Id.List> { appointment ->
-        println("Jeff")
-         val formatter: DateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE
-        val result = controller.getAppointmentList(appointment.parent.id, if(appointment.date.isNullOrBlank()) LocalDate.now() else  LocalDate.parse(appointment.date, formatter))
-        call.respond(result)
-    }
-
     get<Tracing.Facility.Id.All> { values ->
         println("Jeff")
         val formatter: DateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE

@@ -62,6 +62,8 @@ dependencies {
     implementation(libs.hapi.fhir.caching.guava)
     implementation(libs.hapi.fhir.client.okhttp)
 
+    implementation(libs.spullara.mustache)
+
     testImplementation(libs.ktor.server.test.host)
     testImplementation(libs.kotlin.test.junit)
 }

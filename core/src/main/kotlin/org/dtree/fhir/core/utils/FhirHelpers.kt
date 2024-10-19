@@ -29,6 +29,16 @@ fun Reference.extractId(): String =
         ""
     } else this.reference.substringAfterLast(delimiter = '/', missingDelimiterValue = "")
 
+fun String.asReference(resourceType: ResourceType): Reference {
+    val resourceId = this
+    return Reference().apply { reference = "${resourceType.name}/$resourceId" }
+}
+
+fun Resource.asReference(): Reference {
+    val resourceId = this
+    return Reference().apply { reference = "${resourceType.name}/$logicalId" }
+}
+
 
 val Resource.logicalId: String
     get() {

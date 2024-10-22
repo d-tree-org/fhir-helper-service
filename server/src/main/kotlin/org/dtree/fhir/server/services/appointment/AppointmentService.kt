@@ -1,6 +1,7 @@
 package org.dtree.fhir.server.services.appointment
 
 import org.dtree.fhir.core.uploader.general.FhirClient
+import org.dtree.fhir.core.utils.extractOfficialIdentifier
 import org.dtree.fhir.core.utils.logicalId
 import org.dtree.fhir.server.core.models.FilterFormData
 import org.dtree.fhir.server.core.search.filters.filterAddCount
@@ -10,7 +11,6 @@ import org.dtree.fhir.server.core.search.filters.filterRevInclude
 import org.dtree.fhir.server.services.tracing.AppointmentListResults
 import org.dtree.fhir.server.services.tracing.Stuff
 import org.dtree.fhir.server.services.tracing.fetch
-import org.dtree.fhir.server.util.extractOfficialIdentifier
 import org.hl7.fhir.r4.model.Appointment
 import org.hl7.fhir.r4.model.Patient
 import org.hl7.fhir.r4.model.ResourceType

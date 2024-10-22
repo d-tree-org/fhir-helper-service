@@ -23,6 +23,7 @@ import org.hl7.fhir.instance.model.api.IBaseResource
 import org.hl7.fhir.r4.model.Appointment
 import org.hl7.fhir.r4.model.Bundle
 import org.hl7.fhir.r4.model.Resource
+import org.hl7.fhir.r4.model.ResourceType
 import java.net.URL
 import java.util.concurrent.TimeUnit
 
@@ -116,6 +117,32 @@ class FhirClient(private val dotenv: Dotenv, private val iParser: IParser) {
             id = "filter"
         }
         return fetchBundle(listOf(item)).entry.first().resource as Bundle
+    }
+
+    fun fetchResourcesFromList(type: ResourceType, ids: List<String>): Bundle {
+        val item = Bundle.BundleEntryRequestComponent().apply {
+            method = Bundle.HTTPVerb.GET
+            url = "${type.name}?_id=${ids.joinToString(",")}"
+            id = "filter"
+        }
+        return fetchBundle(listOf(item)).entry.first().resource as Bundle
+    }
+
+    /**
+     * Given a patient id fetch the following active items
+     * - Patient
+     * - Guardians (Patient/RelatedPerson)
+     * - Observations
+     * - Practitioner
+     * - Current CarePlan
+     * - Tasks
+     * - Conditions
+     * - Observations
+     * - Appointment
+     * - List
+     */
+    fun fetchAllPatientsActiveItems() {
+
     }
 
     suspend fun bundleUpload(

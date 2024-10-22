@@ -6,8 +6,8 @@ import org.dtree.fhir.server.core.models.*
 import org.dtree.fhir.server.core.search.filters.*
 import org.dtree.fhir.server.services.QueryParam
 import org.dtree.fhir.server.services.createFilter
-import org.dtree.fhir.server.util.SystemConstants
-import org.dtree.fhir.server.util.extractOfficialIdentifier
+import org.dtree.fhir.core.utilities.SystemConstants
+import org.dtree.fhir.core.utils.extractOfficialIdentifier
 import org.hl7.fhir.r4.model.*
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject

@@ -4,8 +4,6 @@ import ca.uhn.fhir.context.FhirContext
 import ca.uhn.fhir.context.FhirVersionEnum
 import ca.uhn.fhir.parser.IParser
 import org.dtree.fhir.core.structureMaps.createStructureMapFromFile
-import org.dtree.fhir.core.utils.CoreResponse
-import org.dtree.fhir.core.utils.readFile
 import org.hl7.fhir.r4.model.*
 import org.hl7.fhir.r4.utils.StructureMapUtilities
 

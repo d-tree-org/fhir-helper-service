@@ -4,6 +4,7 @@ import ca.uhn.fhir.parser.IParser
 import com.github.mustachejava.DefaultMustacheFactory
 import com.github.mustachejava.MustacheFactory
 import org.dtree.fhir.core.utils.asYyyyMmDd
+import org.dtree.fhir.core.utils.category
 import org.dtree.fhir.core.utils.logicalId
 import org.hl7.fhir.r4.model.CarePlan
 import org.hl7.fhir.r4.model.DateType
@@ -29,7 +30,7 @@ class ResponseGenerator : KoinComponent {
         dateVisited: Date,
         extras: List<Resource>
     ): QuestionnaireResponse {
-        val template = fetcher.getResponseTemplate("patient-finish-visit")
+        val template = fetcher.getResponseTemplate("finish-visit")
         val mf: MustacheFactory = DefaultMustacheFactory()
         val byteArrayOutputStream = ByteArrayOutputStream()
 
@@ -54,21 +55,4 @@ class ResponseGenerator : KoinComponent {
         val output = byteArrayOutputStream.toString()
         return iParser.parseResource(output) as QuestionnaireResponse
     }
-}
-
-fun dateAnswer(
-    answerId: String,
-    date: Date,
-    answerText: String? = null
-): QuestionnaireResponse.QuestionnaireResponseItemComponent {
-    return QuestionnaireResponse.QuestionnaireResponseItemComponent().apply {
-        linkId = answerId
-        if (answerText != null) {
-            text = answerText
-        }
-        answer = listOf(QuestionnaireResponse.QuestionnaireResponseItemAnswerComponent().apply {
-            value = DateType(date)
-        })
-    }
-
 }

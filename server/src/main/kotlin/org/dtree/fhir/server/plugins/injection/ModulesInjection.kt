@@ -17,7 +17,11 @@ object ModulesInjection {
     val koinBeans = module {
         single<IParser> { FhirContext.forCached(FhirVersionEnum.R4).newJsonParser() }
 
-        single<ResourceFetcher> { LocalResourceFetcher() }
+        single<ResourceFetcher>(createdAtStart = true) {
+            val fetcher = LocalResourceFetcher(this.get<Dotenv>())
+            fetcher.getRepository()
+            fetcher
+        }
         single<StatsController> { StatsControllerImpl() }
         single<TracingController> { TracingControllerImpl() }
         single<AppointmentController> { AppointmentControllerImpl() }

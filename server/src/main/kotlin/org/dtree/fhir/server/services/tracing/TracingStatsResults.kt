@@ -5,10 +5,6 @@ import java.time.LocalDate
 class TracingStatsResults {
 }
 
-data class AppointmentListResults(
-    val results: List<Stuff>
-)
-
 data class TracingResult(
     val uuid: String,
     val id: String?,

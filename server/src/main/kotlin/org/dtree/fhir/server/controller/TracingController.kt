@@ -1,6 +1,5 @@
 package org.dtree.fhir.server.controller
 
-import org.dtree.fhir.server.services.tracing.AppointmentListResults
 import org.dtree.fhir.server.services.tracing.TracingListResults
 import org.dtree.fhir.server.services.tracing.TracingService
 import org.dtree.fhir.server.services.tracing.TracingStatsResults

@@ -1,7 +1,7 @@
 package org.dtree.fhir.server.controller
 
 import org.dtree.fhir.server.services.appointment.AppointmentService
-import org.dtree.fhir.server.services.tracing.AppointmentListResults
+import org.dtree.fhir.server.services.appointment.AppointmentListResults
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import java.time.LocalDate

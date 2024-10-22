@@ -8,8 +8,6 @@ import org.dtree.fhir.server.core.search.filters.filterAddCount
 import org.dtree.fhir.server.core.search.filters.filterByDate
 import org.dtree.fhir.server.core.search.filters.filterByLocation
 import org.dtree.fhir.server.core.search.filters.filterRevInclude
-import org.dtree.fhir.server.services.tracing.AppointmentListResults
-import org.dtree.fhir.server.services.tracing.Stuff
 import org.dtree.fhir.server.services.tracing.fetch
 import org.hl7.fhir.r4.model.Appointment
 import org.hl7.fhir.r4.model.Patient
@@ -36,7 +34,7 @@ class AppointmentService  : KoinComponent {
             val mPatient = (it.include as Patient)
             val appointment = it.main as Appointment
             val mDate = appointment.start?.toInstant()?.atZone(ZoneId.systemDefault())?.toLocalDate()
-            Stuff(
+            AppointmentResultItem(
                 uuid = mPatient.logicalId,
                 id = mPatient.extractOfficialIdentifier(),
                 name = mPatient.nameFirstRep.nameAsSingleString,

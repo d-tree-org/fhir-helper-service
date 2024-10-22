@@ -116,6 +116,10 @@ object TracingService : KoinComponent {
             )
         }.distinctBy { it.uuid })
     }
+
+    fun setTracingEnteredInError(patientId: List<String>) {
+
+    }
 }
 
 data class Temp(val tasks: List<Task>, val patient: Patient)
@@ -183,11 +187,5 @@ fun handleIncludes(bundle: Bundle): List<ResultClass> {
     }
     return final
 }
-
-fun fetchPatientFromList(ids: List<String>) {
-
-}
-
-data class Stuff(val uuid: String, val id: String?, val name: String, val date: LocalDate?)
 
 data class ResultClass(val main: Resource, val include: Resource)

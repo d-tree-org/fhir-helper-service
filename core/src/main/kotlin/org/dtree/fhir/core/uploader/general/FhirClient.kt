@@ -18,6 +18,8 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import okhttp3.logging.HttpLoggingInterceptor
+import org.dtree.fhir.core.models.PatientData
+import org.dtree.fhir.core.models.parsePatientResources
 import org.hl7.fhir.instance.model.api.IBaseBundle
 import org.hl7.fhir.instance.model.api.IBaseResource
 import org.hl7.fhir.r4.model.Appointment
@@ -80,7 +82,7 @@ class FhirClient(private val dotenv: Dotenv, private val iParser: IParser) {
         return resources.toList() as List<T>
     }
 
-    suspend inline fun <reified T : Resource>transaction(requests: List<Bundle.BundleEntryRequestComponent>): List<T> {
+    suspend inline fun <reified T : Resource> transaction(requests: List<Bundle.BundleEntryRequestComponent>): List<T> {
         val bundle = Bundle()
         bundle.setType(Bundle.BundleType.TRANSACTION)
         bundle.entry.addAll(requests.map { rq ->
@@ -88,17 +90,17 @@ class FhirClient(private val dotenv: Dotenv, private val iParser: IParser) {
                 request = rq
             }
         })
-        var resBundle =  client.transaction().withBundle(bundle).execute()
+        var resBundle = client.transaction().withBundle(bundle).execute()
         val resources: MutableList<IBaseResource> = mutableListOf()
         resources.addAll(BundleUtil.toListOfResources(ctx, resBundle))
         return resources.toList() as List<T>
     }
 
-     fun fetchBundle(list: List<Bundle.BundleEntryRequestComponent>): Bundle {
+    fun fetchBundle(list: List<Bundle.BundleEntryRequestComponent>): Bundle {
         val bundle = Bundle()
-         bundle.setType(Bundle.BundleType.BATCH)
+        bundle.setType(Bundle.BundleType.BATCH)
         bundle.entry.addAll(
-            list.map {rq ->
+            list.map { rq ->
                 Bundle.BundleEntryComponent().apply {
                     request = rq
                     fullUrl = rq.url
@@ -111,9 +113,15 @@ class FhirClient(private val dotenv: Dotenv, private val iParser: IParser) {
 
     fun fetchResourcesFromList(ids: List<String>): Bundle {
         Appointment.AppointmentStatus.WAITLIST
-       val item = Bundle.BundleEntryRequestComponent().apply {
+        val item = Bundle.BundleEntryRequestComponent().apply {
             method = Bundle.HTTPVerb.GET
-            url = "Appointment?patient=${ids.joinToString(",")}&status=${listOf("waitlist", "booked", "noshow").joinToString(",")}&_count=20000"
+            url = "Appointment?patient=${ids.joinToString(",")}&status=${
+                listOf(
+                    "waitlist",
+                    "booked",
+                    "noshow"
+                ).joinToString(",")
+            }&_count=20000"
             id = "filter"
         }
         return fetchBundle(listOf(item)).entry.first().resource as Bundle
@@ -141,8 +149,48 @@ class FhirClient(private val dotenv: Dotenv, private val iParser: IParser) {
      * - Appointment
      * - List
      */
-    fun fetchAllPatientsActiveItems() {
+    fun fetchAllPatientsActiveItems(patientId: String): PatientData {
+        val bundle = Bundle()
+        bundle.type = Bundle.BundleType.BATCH
+        bundle.addEntry()
+            .request
+            .setMethod(Bundle.HTTPVerb.GET)
+            .setUrl("Patient?_id=$patientId&_include=Patient:link&_include=Patient:general-practitioner")
 
+        bundle.addEntry()
+            .request
+            .setMethod(Bundle.HTTPVerb.GET)
+            .setUrl("Observation?subject=$patientId&status=preliminary")
+
+
+        bundle.addEntry()
+            .request
+            .setMethod(Bundle.HTTPVerb.GET)
+            .setUrl("CarePlan?subject=$patientId&status=active,on-hold")
+
+        bundle.addEntry()
+            .request
+            .setMethod(Bundle.HTTPVerb.GET)
+            .setUrl("Task?patient=$patientId&status=ready,in-progress,on-hold")
+
+        bundle.addEntry()
+            .request
+            .setMethod(Bundle.HTTPVerb.GET)
+            .setUrl("Condition?subject=$patientId&clinical-status=active")
+
+        bundle.addEntry()
+            .request
+            .setMethod(Bundle.HTTPVerb.GET)
+            .setUrl("Appointment?actor=$patientId&status=waitlist,booked,noshow")
+
+        bundle.addEntry()
+            .request
+            .setMethod(Bundle.HTTPVerb.GET)
+            .setUrl("List?subject=$patientId&status=current")
+
+        return client.transaction()
+            .withBundle(bundle)
+            .execute().parsePatientResources()
     }
 
     suspend fun bundleUpload(
@@ -171,13 +219,15 @@ class FhirClient(private val dotenv: Dotenv, private val iParser: IParser) {
         list: List<Resource>,
         batchSize: Int
     ) {
-        bundleUpload(list.map { res -> Bundle.BundleEntryComponent().apply {
-            resource = res
-            request = Bundle.BundleEntryRequestComponent().apply {
-                method = Bundle.HTTPVerb.PUT
-                url = "${res.resourceType.name}/${res.logicalId}"
+        bundleUpload(list.map { res ->
+            Bundle.BundleEntryComponent().apply {
+                resource = res
+                request = Bundle.BundleEntryRequestComponent().apply {
+                    method = Bundle.HTTPVerb.PUT
+                    url = "${res.resourceType.name}/${res.logicalId}"
+                }
             }
-        } }, batchSize)
+        }, batchSize)
     }
 
     private suspend fun uploadBatchUpload(list: List<Bundle.BundleEntryComponent>): DataResponseState<Boolean> {

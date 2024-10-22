@@ -44,3 +44,5 @@ bin/
 *.env
 
 .kotlin/
+
+.temp/

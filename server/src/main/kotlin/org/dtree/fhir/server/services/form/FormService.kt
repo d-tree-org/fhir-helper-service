@@ -17,13 +17,10 @@ object FormService : KoinComponent {
 
     fun finishVisit(body: List<FinishVisitRequest>) {
         val strMap = fetcher.fetchStructureMap("finish-visit")
-        val patientMap = mapOf(*client.fetchResourcesFromList(ResourceType.Patient, body.map { it.id }).entry.map {
-            val patient = it.resource as Patient
-            Pair(patient.logicalId, patient)
-        }.toTypedArray())
         for (entry in body) {
-            val patient = patientMap[entry.id] ?: continue
-            responseGenerator.generateFinishVisit(patient, CarePlan(), Date(), Date(), listOf())
+            val patientData = client.fetchAllPatientsActiveItems(entry.id)
+            if (patientData.isEmpty()) continue
+            responseGenerator.generateFinishVisit(patientData.patient, CarePlan(), Date(), Date(), listOf())
         }
     }
 }

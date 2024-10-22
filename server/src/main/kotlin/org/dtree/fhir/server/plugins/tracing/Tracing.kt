@@ -16,4 +16,6 @@ class Tracing() {
             class All(val parent: Id = Facility.Id(), val date: String? = "")
         }
     }
+    @Resource("entered-in-error")
+    class EnteredInError(val parent: Tracing = Tracing()) {}
 }

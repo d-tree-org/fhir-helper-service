@@ -16,12 +16,23 @@ class TracingControllerImpl : TracingController, BaseController(), KoinComponent
     override fun getTracingList(facilityId: String, date: LocalDate): TracingListResults {
         val result = tracingService.getTracingList(facilityId, date)
         println(result.results.size)
-        return  result
+        return result
+    }
+
+    override suspend fun setPatientsEnteredInError(patients: List<String>): Boolean {
+        return try {
+            tracingService.setTracingEnteredInError(patients)
+            true
+        } catch (e: Exception) {
+            false
+        }
     }
 }
 
 interface TracingController {
     fun getStats(id: String): TracingStatsResults
 
-    fun getTracingList(facilityId: String, date: LocalDate) : TracingListResults
+    fun getTracingList(facilityId: String, date: LocalDate): TracingListResults
+
+    suspend fun setPatientsEnteredInError(patients: List<String>): Boolean
 }

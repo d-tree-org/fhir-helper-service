@@ -28,4 +28,7 @@ object ReasonConstants {
 
     const val TRACING_OUTCOME_CODE = "tracing-outcome"
     const val DATE_OF_AGREED_APPOINTMENT = "date-of-agreed-appointment"
+
+    val resourceEnteredInError =
+        Coding(SystemConstants.RESOURCE_REMOVAL_REASON_SYSTEM, "entered-in-error", "Entered in error")
 }

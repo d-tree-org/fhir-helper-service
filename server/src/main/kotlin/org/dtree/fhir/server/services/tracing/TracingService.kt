@@ -1,6 +1,8 @@
 package org.dtree.fhir.server.services.tracing
 
+import ca.uhn.fhir.rest.gclient.TokenClientParam
 import org.dtree.fhir.core.uploader.general.FhirClient
+import org.dtree.fhir.core.utilities.ReasonConstants
 import org.dtree.fhir.core.utils.logicalId
 import org.dtree.fhir.server.core.models.*
 import org.dtree.fhir.server.core.search.filters.*
@@ -117,8 +119,25 @@ object TracingService : KoinComponent {
         }.distinctBy { it.uuid })
     }
 
-    fun setTracingEnteredInError(patientId: List<String>) {
-
+    suspend fun setTracingEnteredInError(patientId: List<String>) {
+        val tasks =
+            client.fhirClient.search<Bundle>().forResource(Task::class.java)
+                .where(Task.PATIENT.hasAnyOfIds(patientId))
+                .where(
+                    TokenClientParam("_tag").exactly()
+                        .codings(ReasonConstants.homeTracingCoding, ReasonConstants.phoneTracingCoding)
+                )
+                .where(Task.STATUS.exactly().codes(Task.TaskStatus.READY.toCode(), Task.TaskStatus.INPROGRESS.toCode()))
+                .execute().entry.map {
+                    val task = it.resource as Task
+                    task.meta.addTag(
+                        ReasonConstants.resourceEnteredInError
+                    )
+                    task.status = Task.TaskStatus.ENTEREDINERROR
+                    task
+                }
+        println("Tasks entered in error ${tasks.size}")
+        client.bundleUpload(tasks, 20)
     }
 }
 

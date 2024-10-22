@@ -11,7 +11,6 @@ import org.dtree.fhir.core.utils.logicalId
 import io.github.cdimascio.dotenv.Dotenv
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -26,12 +25,11 @@ import org.hl7.fhir.r4.model.Appointment
 import org.hl7.fhir.r4.model.Bundle
 import org.hl7.fhir.r4.model.Resource
 import org.hl7.fhir.r4.model.ResourceType
-import java.net.URL
 import java.util.concurrent.TimeUnit
 
 
 class FhirClient(private val dotenv: Dotenv, private val iParser: IParser) {
-    val client: IGenericClient
+    val fhirClient: IGenericClient
     private val okHttpClient: OkHttpClient
     val ctx: FhirContext = FhirContext.forR4()
 
@@ -41,7 +39,7 @@ class FhirClient(private val dotenv: Dotenv, private val iParser: IParser) {
         factory.fhirContext = ctx
         factory.setHttpClient(okHttpClient)
         ctx.restfulClientFactory = factory
-        client = ctx.newRestfulGenericClient(dotenv["FHIR_BASE_URL"])
+        fhirClient = ctx.newRestfulGenericClient(dotenv["FHIR_BASE_URL"])
     }
 
     private fun createOkHttpClient(): OkHttpClient {
@@ -64,7 +62,7 @@ class FhirClient(private val dotenv: Dotenv, private val iParser: IParser) {
     ): List<T> {
         val resources: MutableList<IBaseResource> = mutableListOf()
         val query =
-            client.search<IBaseBundle>().forResource(T::class.java).apply(search).returnBundle(Bundle::class.java)
+            fhirClient.search<IBaseBundle>().forResource(T::class.java).apply(search).returnBundle(Bundle::class.java)
                 .count(count)
         if (limit != null) {
             query.count(limit)
@@ -75,7 +73,7 @@ class FhirClient(private val dotenv: Dotenv, private val iParser: IParser) {
         if (limit == null) {
             while (bundle.getLink(IBaseBundle.LINK_NEXT) != null) {
                 Logger.info(bundle.link.map { it.url }.toString())
-                bundle = client.loadPage().next(bundle).execute()
+                bundle = fhirClient.loadPage().next(bundle).execute()
                 resources.addAll(BundleUtil.toListOfResources(ctx, bundle))
             }
         }
@@ -90,7 +88,7 @@ class FhirClient(private val dotenv: Dotenv, private val iParser: IParser) {
                 request = rq
             }
         })
-        var resBundle = client.transaction().withBundle(bundle).execute()
+        val resBundle = fhirClient.transaction().withBundle(bundle).execute()
         val resources: MutableList<IBaseResource> = mutableListOf()
         resources.addAll(BundleUtil.toListOfResources(ctx, resBundle))
         return resources.toList() as List<T>
@@ -108,7 +106,7 @@ class FhirClient(private val dotenv: Dotenv, private val iParser: IParser) {
                 }
             }
         )
-        return client.transaction().withBundle(bundle).execute()
+        return fhirClient.transaction().withBundle(bundle).execute()
     }
 
     fun fetchResourcesFromList(ids: List<String>): Bundle {
@@ -188,7 +186,7 @@ class FhirClient(private val dotenv: Dotenv, private val iParser: IParser) {
             .setMethod(Bundle.HTTPVerb.GET)
             .setUrl("List?subject=$patientId&status=current")
 
-        return client.transaction()
+        return fhirClient.transaction()
             .withBundle(bundle)
             .execute().parsePatientResources()
     }

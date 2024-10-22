@@ -6,7 +6,8 @@ import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 
 class  TasksControllerImpl : TasksController, BaseController(), KoinComponent {
-    val formService by inject<FormService>()
+    private val formService by inject<FormService>()
+
     override fun finishVisits(body: List<FinishVisitRequest>) {
         formService.finishVisit(body)
     }

@@ -13,6 +13,7 @@ object SystemConstants {
     const val CARE_PLAN_REFERENCE_SYSTEM = "https://d-tree.org/fhir/careplan-reference"
     const val QUESTIONNAIRE_REFERENCE_SYSTEM = "https://d-tree.org/fhir/procedure-code"
     const val LOCATION_TAG = "http://smartregister.org/fhir/location-tag"
+    const val RESOURCE_REMOVAL_REASON_SYSTEM = "https://d-tree.org/fhir/resource-removal-reason-code"
     const val LOCATION_HIERARCHY_BINARY = "location-hierarchy"
 
     fun getIdentifierSystemFromPatientType(patientType: String): String {

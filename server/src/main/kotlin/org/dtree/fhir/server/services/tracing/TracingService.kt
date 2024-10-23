@@ -19,46 +19,20 @@ import java.time.ZoneId
 
 object TracingService : KoinComponent {
     private val client by inject<FhirClient>()
+
+
     fun getStats(id: String): TracingStatsResults {
         TODO("Not yet implemented")
     }
 
     fun getTracingList(facilityId: String, date: LocalDate): TracingListResults {
-        val locationFilter = filterByLocation(facilityId)
-        val filterByActive = FilterFormItem(
-            filterId = "filter-by-task-status",
-            template = "status={status}",
-            filterType = FilterTemplateType.template,
-            params = listOf(
-                FilterFormParamData(
-                    name = "status",
-                    type = FilterParamType.string,
-                    value = listOf("ready", "in-progress").joinToString(",")
-                )
-            ),
-        )
-        val filterTracingTask = FilterFormItem(
-            filterId = "filter-by-task-tracing-code",
-            template = "code={code}",
-            filterType = FilterTemplateType.template,
-            params = listOf(
-                FilterFormParamData(
-                    name = "code",
-                    type = FilterParamType.string,
-                    value = "225368008"
-                )
-            ),
-        )
         val filter = FilterFormData(
             resource = ResourceType.Task.name,
             filterId = "random_filter",
             filters = listOf(
                 filterAddCount(20000),
                 filterRevInclude("Task:patient"),
-                locationFilter,
-                filterByActive,
-                filterTracingTask
-            )
+            ) + tracingFiltersByFacility(facilityId)
         )
 
         val results = fetch(client, listOf(filter))

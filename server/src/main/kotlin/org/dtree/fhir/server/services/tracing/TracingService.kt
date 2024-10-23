@@ -149,7 +149,7 @@ object TracingService : KoinComponent {
             println("No Tracing tasks")
             return
         }
-        client.bundleUpload(tasks, 20)
+        client.bundleUpload(tasks, 30)
     }
 }
 

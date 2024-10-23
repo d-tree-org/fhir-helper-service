@@ -21,7 +21,10 @@ class TracingControllerImpl : TracingController, BaseController(), KoinComponent
 
     override suspend fun setPatientsEnteredInError(patients: List<String>): Boolean {
         return try {
-            tracingService.setTracingEnteredInError(patients)
+            patients.chunked(30).mapIndexed {  idx, chunk ->
+                tracingService.setTracingEnteredInError(chunk)
+                println("Finished chuck ${idx + 1} - size ${chunk.size}")
+            }
             true
         } catch (e: Exception) {
             false

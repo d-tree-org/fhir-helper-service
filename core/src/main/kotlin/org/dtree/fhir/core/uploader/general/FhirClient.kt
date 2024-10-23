@@ -6,8 +6,6 @@ import ca.uhn.fhir.parser.IParser
 import ca.uhn.fhir.rest.client.api.IGenericClient
 import ca.uhn.fhir.rest.gclient.IQuery
 import ca.uhn.fhir.util.BundleUtil
-import org.dtree.fhir.core.utils.Logger
-import org.dtree.fhir.core.utils.logicalId
 import io.github.cdimascio.dotenv.Dotenv
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -19,6 +17,8 @@ import okhttp3.Response
 import okhttp3.logging.HttpLoggingInterceptor
 import org.dtree.fhir.core.models.PatientData
 import org.dtree.fhir.core.models.parsePatientResources
+import org.dtree.fhir.core.utils.Logger
+import org.dtree.fhir.core.utils.logicalId
 import org.hl7.fhir.instance.model.api.IBaseBundle
 import org.hl7.fhir.instance.model.api.IBaseResource
 import org.hl7.fhir.r4.model.Appointment
@@ -264,8 +264,16 @@ class FhirClient(private val dotenv: Dotenv, private val iParser: IParser) {
     }
 }
 
-sealed class DataResponseState<out T> {
-    data class Success<T>(val data: T) : DataResponseState<T>()
+fun <T : IBaseResource> IQuery<Bundle>.paginateExecute(client: FhirClient): List<T> {
+    val list = mutableListOf<IBaseResource>()
 
-    data class Error(val exception: Exception) : DataResponseState<Nothing>()
+   var bundle = this.execute()
+    list.addAll(BundleUtil.toListOfResources(client.ctx, bundle))
+
+    while (bundle.getLink(IBaseBundle.LINK_NEXT) != null) {
+        bundle = client.fhirClient.loadPage().next(bundle).execute();
+        list.addAll(BundleUtil.toListOfResources(client.ctx, bundle));
+    }
+
+    return list.toList() as List<T>
 }

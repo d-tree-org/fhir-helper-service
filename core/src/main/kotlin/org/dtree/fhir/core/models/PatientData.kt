@@ -1,5 +1,6 @@
 package org.dtree.fhir.core.models
 
+import org.dtree.fhir.core.utils.TracingHelpers
 import org.hl7.fhir.r4.model.*
 
 data class PatientData(
@@ -23,6 +24,28 @@ data class PatientData(
                 conditions.isEmpty() &&
                 appointments.isEmpty() &&
                 lists.isEmpty()
+    }
+
+    fun toPopulationResource(): List<Resource> {
+        val currentCarePlan = carePlans.firstOrNull()
+        val resources = conditions + guardians + observations
+        val resourcesAsBundle = Bundle().apply { resources.map { this.addEntry().resource = it } }
+        val bundle = Bundle()
+        bundle.id = TracingHelpers.tracingBundleId
+
+        // TODO: filter tracing ones
+        tasks.forEach { bundle.addEntry(Bundle.BundleEntryComponent().setResource(it)) }
+        lists.forEach { bundle.addEntry(Bundle.BundleEntryComponent().setResource(it)) }
+        appointments.forEach { bundle.addEntry(Bundle.BundleEntryComponent().setResource(it)) }
+
+        resourcesAsBundle.addEntry().resource = bundle
+
+        val list = arrayListOf(*practitioners.toTypedArray(), resourcesAsBundle, patient)
+        if (currentCarePlan != null) {
+            list.add(currentCarePlan)
+        }
+
+        return list
     }
 }
 

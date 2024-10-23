@@ -8,6 +8,7 @@ import java.time.LocalDate
 
 class  AppointmentControllerImpl : AppointmentController, BaseController(), KoinComponent {
     private val appointmentService by inject<AppointmentService>()
+
     override fun getAppointmentList(facilityId: String, date: LocalDate): AppointmentListResults {
         return appointmentService.getAppointmentList(facilityId, date)
     }

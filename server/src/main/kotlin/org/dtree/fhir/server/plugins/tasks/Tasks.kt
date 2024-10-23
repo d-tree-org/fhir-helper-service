@@ -8,5 +8,8 @@ class Tasks() {
     class Fixes(val parent: Tasks = Tasks()) {
         @Resource("finish-visits")
         class FinishVisits(val parent: Fixes = Fixes())
+
+        @Resource("appointment-date")
+        class AppointmentData(val parent: Fixes = Fixes())
     }
 }

@@ -1,5 +1,6 @@
 package org.dtree.fhir.server.controller
 
+import org.dtree.fhir.server.plugins.tasks.ChangeAppointmentData
 import org.dtree.fhir.server.plugins.tasks.FinishVisitRequest
 import org.dtree.fhir.server.services.form.FormService
 import org.koin.core.component.KoinComponent
@@ -11,8 +12,13 @@ class  TasksControllerImpl : TasksController, BaseController(), KoinComponent {
     override fun finishVisits(body: List<FinishVisitRequest>) {
         formService.finishVisit(body)
     }
+
+    override suspend fun changeAppointmentData(body: List<ChangeAppointmentData>) {
+        formService.changeAppointmentData(body)
+    }
 }
 
 interface TasksController {
     fun finishVisits(body: List<FinishVisitRequest>)
+    suspend fun changeAppointmentData(body: List<ChangeAppointmentData>)
 }

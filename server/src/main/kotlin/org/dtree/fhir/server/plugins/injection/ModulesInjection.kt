@@ -15,10 +15,10 @@ import org.koin.dsl.module
 
 object ModulesInjection {
     val koinBeans = module {
-        single<IParser> { FhirContext.forCached(FhirVersionEnum.R4).newJsonParser() }
+        single<IParser>(createdAtStart = true) { FhirContext.forCached(FhirVersionEnum.R4).newJsonParser() }
 
         single<ResourceFetcher>(createdAtStart = true) {
-            val fetcher = LocalResourceFetcher(this.get<Dotenv>())
+            val fetcher = LocalResourceFetcher(this.get<Dotenv>(), this.get<FhirProvider>().parser, this.get())
             fetcher.getRepository()
             fetcher
         }
@@ -28,7 +28,7 @@ object ModulesInjection {
         single<CarePlanController> { CarePlanControllerImpl() }
         single<TasksController> { TasksControllerImpl() }
 
-        single<FhirClient> { FhirClient(this.get<Dotenv>(), this.get<FhirProvider>().parser()) }
+        single<FhirClient> { FhirClient(this.get<Dotenv>(), this.get<FhirProvider>().parser) }
 
         singleOf(::ResponseGenerator)
     }

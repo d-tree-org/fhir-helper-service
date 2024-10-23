@@ -1,6 +1,11 @@
 package org.dtree.fhir.server.services.form
 
+import ca.uhn.fhir.parser.IParser
 import io.github.cdimascio.dotenv.Dotenv
+import org.dtree.fhir.core.compiler.parsing.ParseJsonCommands
+import org.dtree.fhir.core.config.ProjectConfig
+import org.dtree.fhir.core.config.ProjectConfigManager
+import org.dtree.fhir.core.di.FhirProvider
 import org.dtree.fhir.core.utils.readFile
 import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.transport.CredentialsProvider
@@ -9,24 +14,30 @@ import org.eclipse.jgit.transport.URIish
 import org.eclipse.jgit.transport.sshd.IdentityPasswordProvider
 import org.eclipse.jgit.transport.sshd.SshdSessionFactoryBuilder
 import org.eclipse.jgit.util.FS
+import org.hl7.fhir.r4.model.Questionnaire
 import org.hl7.fhir.r4.model.StructureMap
+import org.koin.core.component.inject
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.Path
 import java.time.Instant
 import kotlin.io.path.exists
 import kotlin.io.path.getLastModifiedTime
+import kotlin.io.path.pathString
 
 
 interface ResourceFetcher {
     fun fetchStructureMap(id: String): StructureMap
     fun getResponseTemplate(s: String): String
+    fun getQuestionnaire(s: String): Questionnaire
 }
 
-class LocalResourceFetcher(private val dotEnv: Dotenv) : ResourceFetcher {
+class LocalResourceFetcher(private val dotEnv: Dotenv, private val iParser: IParser, val fhirProvider: FhirProvider) :
+    ResourceFetcher {
 
     private val baseDir: Path = Path.of(dotEnv["RESOURCES_CACHE_DIR"] ?: "repo-cache")
     private val cacheExpiryHours: Long = 24
+    private var projectConfig: ProjectConfig = ProjectConfig()
 
     init {
         Files.createDirectories(baseDir)
@@ -110,14 +121,30 @@ class LocalResourceFetcher(private val dotEnv: Dotenv) : ResourceFetcher {
         } else {
             cloneNewRepo(repoUrl, repoDir)
         }
+        projectConfig = ProjectConfigManager().loadProjectConfig(
+            projectRoot = repoPath().pathString,
+            file = null
+        )
     }
 
     override fun fetchStructureMap(id: String): StructureMap {
-        return StructureMap()
+      val res =  ParseJsonCommands().parseStructureMap(
+            repoPath().resolve(id).pathString,
+            fhirProvider.parser,
+            fhirProvider.scu(), projectConfig
+        )
+        if (res == null) throw  Exception("Failed to fetch StructureMap")
+
+        return  res
     }
 
     override fun getResponseTemplate(s: String): String {
         return repoPath().resolve("response-templates/${s}.mustache").toFile().readFile()
+    }
+
+    override fun getQuestionnaire(s: String): Questionnaire {
+        val questStr = repoPath().resolve(s).toFile().readFile()
+        return iParser.parseResource(Questionnaire::class.java, questStr)
     }
 }
 

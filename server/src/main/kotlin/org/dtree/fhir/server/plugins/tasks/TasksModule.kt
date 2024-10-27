@@ -22,4 +22,10 @@ fun Route.tasksModule() {
         controller.changeAppointmentData(body)
         call.respond("Jeff")
     }
+
+    post<Tasks.Fixes.TracingEnteredError> {
+        val body = call.receive<List<String>>()
+        controller.tracingEnteredInError(body)
+        call.respond("Jeff")
+    }
 }

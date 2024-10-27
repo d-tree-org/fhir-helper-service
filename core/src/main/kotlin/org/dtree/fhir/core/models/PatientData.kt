@@ -3,6 +3,10 @@ package org.dtree.fhir.core.models
 import org.dtree.fhir.core.utils.TracingHelpers
 import org.hl7.fhir.r4.model.*
 
+enum class TracingType {
+    home, phone, none
+}
+
 data class PatientData(
     var patient: Patient = Patient(),
     val guardians: MutableList<RelatedPerson> = mutableListOf(),
@@ -46,6 +50,10 @@ data class PatientData(
         }
 
         return list
+    }
+
+    fun getTracingType():TracingType {
+        return TracingType.phone
     }
 }
 

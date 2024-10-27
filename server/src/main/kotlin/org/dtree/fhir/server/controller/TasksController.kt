@@ -16,9 +16,14 @@ class  TasksControllerImpl : TasksController, BaseController(), KoinComponent {
     override suspend fun changeAppointmentData(body: List<ChangeAppointmentData>) {
         formService.changeAppointmentData(body)
     }
+
+    override suspend fun tracingEnteredInError(body: List<String>) {
+        formService.tracingEnteredInError(body)
+    }
 }
 
 interface TasksController {
     fun finishVisits(body: List<FinishVisitRequest>)
     suspend fun changeAppointmentData(body: List<ChangeAppointmentData>)
+    suspend fun tracingEnteredInError(body: List<String>)
 }

@@ -11,5 +11,8 @@ class Tasks() {
 
         @Resource("appointment-date")
         class AppointmentData(val parent: Fixes = Fixes())
+
+        @Resource("tracing-entered-error")
+        class TracingEnteredError(val parent: Fixes = Fixes())
     }
 }

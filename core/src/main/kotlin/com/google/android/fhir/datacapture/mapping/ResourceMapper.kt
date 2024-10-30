@@ -16,18 +16,16 @@
 
 package com.google.android.fhir.datacapture.mapping
 
+import com.google.android.fhir.datacapture.extensions.*
 import com.google.android.fhir.datacapture.extensions.createQuestionnaireResponseItem
 import com.google.android.fhir.datacapture.extensions.filterByCodeInNameExtension
-import com.google.android.fhir.datacapture.extensions.initialExpression
-import com.google.android.fhir.datacapture.extensions.logicalId
 import com.google.android.fhir.datacapture.extensions.questionnaireLaunchContexts
-import com.google.android.fhir.datacapture.extensions.targetStructureMap
-import com.google.android.fhir.datacapture.extensions.toCodeType
-import com.google.android.fhir.datacapture.extensions.toCoding
-import com.google.android.fhir.datacapture.extensions.toIdType
-import com.google.android.fhir.datacapture.extensions.toUriType
 import com.google.android.fhir.datacapture.extensions.validateLaunchContextExtensions
 import com.google.android.fhir.datacapture.extensions.zipByLinkId
+import com.google.android.fhir.toCodeType
+import com.google.android.fhir.toCoding
+import com.google.android.fhir.toIdType
+import com.google.android.fhir.toUriType
 import com.google.android.fhir.datacapture.fhirpath.evaluateToBase
 import java.lang.reflect.Field
 import java.lang.reflect.Method

@@ -3,7 +3,9 @@ package org.dtree.fhir.server.plugins.injection
 import ca.uhn.fhir.context.FhirContext
 import ca.uhn.fhir.context.FhirVersionEnum
 import ca.uhn.fhir.parser.IParser
+import com.google.android.fhir.datacapture.XFhirQueryResolver
 import io.github.cdimascio.dotenv.Dotenv
+import org.dtree.fhir.core.di.DXFhirQueryResolver
 import org.dtree.fhir.core.di.FhirProvider
 import org.dtree.fhir.core.uploader.general.FhirClient
 import org.dtree.fhir.server.controller.*
@@ -15,6 +17,7 @@ import org.koin.dsl.module
 
 object ModulesInjection {
     val koinBeans = module {
+        single<XFhirQueryResolver> { DXFhirQueryResolver() }
         single<IParser>(createdAtStart = true) { FhirContext.forCached(FhirVersionEnum.R4).newJsonParser() }
 
         single<ResourceFetcher>(createdAtStart = true) {

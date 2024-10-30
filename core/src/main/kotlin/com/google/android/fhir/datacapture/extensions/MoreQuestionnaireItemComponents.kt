@@ -16,6 +16,7 @@
 
 package com.google.android.fhir.datacapture.extensions
 
+import com.google.android.fhir.getLocalizedText
 import org.hl7.fhir.r4.model.*
 
 // Please note these URLs do not point to any FHIR Resource and are broken links. They are being
@@ -33,6 +34,12 @@ internal const val EXTENSION_ITEM_CONTROL_URL =
     "http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl"
 
 internal const val EXTENSION_ITEM_CONTROL_SYSTEM = "http://hl7.org/fhir/questionnaire-item-control"
+
+internal const val EXTENSION_ENABLE_WHEN_EXPRESSION_URL: String =
+    "http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-enableWhenExpression"
+
+internal const val EXTENSION_CALCULATED_EXPRESSION_URL =
+    "http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-calculatedExpression"
 
 /**
  * Creates a list of [QuestionnaireResponse.QuestionnaireResponseItemComponent]s corresponding to
@@ -219,3 +226,80 @@ internal val Questionnaire.QuestionnaireItemComponent.displayItemControl: Displa
             codeableConcept?.coding?.firstOrNull { it.system == EXTENSION_ITEM_CONTROL_SYSTEM }?.code
         return DisplayItemControlType.values().firstOrNull { it.extensionCode == code }
     }
+
+// Return expression if QuestionnaireItemComponent has ENABLE WHEN EXPRESSION URL
+val Questionnaire.QuestionnaireItemComponent.enableWhenExpression: Expression?
+    get() {
+        return this.extension
+            .firstOrNull { it.url == EXTENSION_ENABLE_WHEN_EXPRESSION_URL }
+            ?.let { it.value as Expression }
+    }
+
+/** Returns Calculated expression, or null */
+internal val Questionnaire.QuestionnaireItemComponent.calculatedExpression: Expression?
+    get() =
+        this.getExtensionByUrl(EXTENSION_CALCULATED_EXPRESSION_URL)?.let {
+            it.castToExpression(it.value)
+        }
+
+/**
+ * Flatten a nested list of [Questionnaire.QuestionnaireItemComponent] recursively and returns a
+ * flat list of all items into list embedded at any level
+ */
+fun List<Questionnaire.QuestionnaireItemComponent>.flattened():
+        List<Questionnaire.QuestionnaireItemComponent> =
+    mutableListOf<Questionnaire.QuestionnaireItemComponent>().also { flattenInto(it) }
+
+private fun List<Questionnaire.QuestionnaireItemComponent>.flattenInto(
+    output: MutableList<Questionnaire.QuestionnaireItemComponent>,
+) {
+    forEach {
+        output.add(it)
+        it.item.flattenInto(output)
+    }
+}
+
+/**
+ * Whether [item] has any expression directly referencing the current questionnaire item by link ID
+ * (e.g. if [item] has an expression `%resource.item.where(linkId='this-question')` where
+ * `this-question` is the link ID of the current questionnaire item).
+ */
+internal fun Questionnaire.QuestionnaireItemComponent.isReferencedBy(
+    item: Questionnaire.QuestionnaireItemComponent,
+) =
+    item.expressionBasedExtensions.any {
+        it
+            .castToExpression(it.value)
+            .expression
+            .replace(" ", "")
+            .contains(Regex(".*linkId='${this.linkId}'.*"))
+    }
+
+/** Returns list of extensions whose value is of type [Expression] */
+internal val Questionnaire.QuestionnaireItemComponent.expressionBasedExtensions
+    get() = this.extension.filter { it.value is Expression }
+
+internal val Questionnaire.QuestionnaireItemComponent.variableExpressions: List<Expression>
+    get() =
+        this.extension.filter { it.url == EXTENSION_VARIABLE_URL }.map { it.castToExpression(it.value) }
+
+
+/**
+ * Finds the specific variable name [String] at the questionnaire item
+ * [Questionnaire.QuestionnaireItemComponent]
+ *
+ * @param variableName the [String] to match the variable
+ * @return an [Expression]
+ */
+internal fun Questionnaire.QuestionnaireItemComponent.findVariableExpression(
+    variableName: String,
+): Expression? {
+    return variableExpressions.find { it.name == variableName }
+}
+
+/**
+ * Localized and spanned value of [Questionnaire.QuestionnaireItemComponent.text] if translation is
+ * present. Default value otherwise.
+ */
+val Questionnaire.QuestionnaireItemComponent.localizedTextSpanned: String?
+    get() = textElement?.getLocalizedText()

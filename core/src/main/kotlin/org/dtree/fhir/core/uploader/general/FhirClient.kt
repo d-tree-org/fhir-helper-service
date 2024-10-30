@@ -174,7 +174,7 @@ class FhirClient(private val dotenv: Dotenv, private val iParser: IParser) {
         bundle.addEntry()
             .request
             .setMethod(Bundle.HTTPVerb.GET)
-            .setUrl("Task?patient=$patientId&status=ready,in-progress,on-hold")
+            .setUrl("Task?patient=$patientId&status=ready,in-progress,on-hold&_count=100000")
 
         bundle.addEntry()
             .request
@@ -191,9 +191,11 @@ class FhirClient(private val dotenv: Dotenv, private val iParser: IParser) {
             .setMethod(Bundle.HTTPVerb.GET)
             .setUrl("List?subject=$patientId&status=current")
 
+        println(iParser.encodeResourceToString(bundle))
         return fhirClient.transaction()
             .withBundle(bundle)
-            .execute().parsePatientResources()
+            .prettyPrint()
+            .execute().parsePatientResources(patientId)
     }
 
     suspend fun bundleUpload(
@@ -224,10 +226,18 @@ class FhirClient(private val dotenv: Dotenv, private val iParser: IParser) {
     ) {
         bundleUpload(list.map { res ->
             Bundle.BundleEntryComponent().apply {
-                resource = res
+                resource = res.apply {
+                    id = logicalId
+                }
                 request = Bundle.BundleEntryRequestComponent().apply {
-                    method = Bundle.HTTPVerb.PUT
-                    url = "${res.resourceType.name}/${res.logicalId}"
+                    if (res.hasId()) {
+                        method = Bundle.HTTPVerb.PUT
+                        url = "${res.resourceType.name}/${res.logicalId}"
+                    }
+                    else {
+                        method = Bundle.HTTPVerb.POST
+                        url = res.resourceType.name
+                    }
                 }
             }
         }, batchSize)
@@ -238,24 +248,15 @@ class FhirClient(private val dotenv: Dotenv, private val iParser: IParser) {
             entry = list
             type = Bundle.BundleType.TRANSACTION
         }
-        val mediaType = "application/json".toMediaTypeOrNull()
-        val requestBody = iParser.encodeResourceToString(bundle).toRequestBody(mediaType)
-//        println(iParser.encodeResourceToString(bundle))
-        val request = Request.Builder()
-            .url(dotenv["FHIR_BASE_URL"])
-            .post(requestBody)
-            .build()
-        val call = okHttpClient.newCall(request)
+
         return withContext(Dispatchers.IO) {
             try {
-                val response = call.execute()
-                if (!response.isSuccessful) {
-                    Logger.error("Failed to upload batch: ${response.code} - ${response.message}")
-                    return@withContext DataResponseState.Error(exceptionFromResponse(response))
-                } else {
-                    Logger.info("Uploaded successfully")
-                }
-                response.close()
+                val response = fhirClient.transaction().withBundle(bundle).execute()
+//                if (BundleUtil.getBundleType()) {
+//                    Logger.error("Failed to upload batch: ${response.code} - ${response.message}")
+//                    return@withContext DataResponseState.Error(exceptionFromResponse(response))
+//                }
+                Logger.info("Uploaded successfully")
                 DataResponseState.Success(true)
             } catch (e: Exception) {
                 Logger.error("Failed to upload batch: ${e.message}")

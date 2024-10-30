@@ -2,6 +2,7 @@ package org.dtree.fhir.core.models
 
 import org.dtree.fhir.core.utils.TracingHelpers
 import org.dtree.fhir.core.utils.isHomeTracingTask
+import org.dtree.fhir.core.utils.logicalId
 import org.hl7.fhir.r4.model.*
 
 enum class TracingType {
@@ -11,6 +12,7 @@ enum class TracingType {
 data class PatientData(
     var patient: Patient = Patient(),
     val guardians: MutableList<RelatedPerson> = mutableListOf(),
+    val linkedPatients: MutableList<Patient> = mutableListOf(),
     val observations: MutableList<Observation> = mutableListOf(),
     val practitioners: MutableList<Practitioner> = mutableListOf(),
     val carePlans: MutableList<CarePlan> = mutableListOf(),
@@ -46,8 +48,6 @@ data class PatientData(
         lists.forEach { tracingBundle.addEntry(Bundle.BundleEntryComponent().setResource(it)) }
         appointments.forEach { tracingBundle.addEntry(Bundle.BundleEntryComponent().setResource(it)) }
 
-        resourcesAsBundle.addEntry().resource = tracingBundle
-
         resourcesAsBundle.addEntry(
             Bundle.BundleEntryComponent().setResource(tracingBundle).apply {
                 id = TracingHelpers.tracingBundleId
@@ -66,9 +66,13 @@ data class PatientData(
         val task = tracingTasks.firstOrNull() ?: return TracingType.none
         return if (task.isHomeTracingTask()) TracingType.home else TracingType.phone
     }
+
+    fun toLaunchContextMap(): Map<String, Resource>? {
+        return null
+    }
 }
 
-fun Bundle.parsePatientResources(): PatientData {
+fun Bundle.parsePatientResources(patientId: String): PatientData {
     val patientData = PatientData()
     val tasks = mutableListOf<Task>()
     val tracingTasks = mutableListOf<Task>()
@@ -82,7 +86,14 @@ fun Bundle.parsePatientResources(): PatientData {
 
         resources.forEach { resource ->
             when (resource) {
-                is Patient -> patientData.patient = resource
+                is Patient -> {
+                    if (resource.logicalId != patientId) {
+                        patientData.linkedPatients.add(resource)
+                    } else {
+                        patientData.patient = resource
+                    }
+                }
+
                 is RelatedPerson -> patientData.guardians.add(resource)
                 is Observation -> patientData.observations.add(resource)
                 is Practitioner -> patientData.practitioners.add(resource)

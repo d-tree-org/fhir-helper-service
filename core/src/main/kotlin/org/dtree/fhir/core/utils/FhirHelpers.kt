@@ -40,7 +40,7 @@ fun Resource.asReference(): Reference {
 
 val Resource.logicalId: String
     get() {
-        return this.idElement?.idPart.orEmpty()
+        return this.idElement?.idPart?.replace("#", "").orEmpty()
     }
 
 fun CarePlan.isCompleted(): Boolean {

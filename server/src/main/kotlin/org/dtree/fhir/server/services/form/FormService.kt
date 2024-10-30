@@ -1,6 +1,7 @@
 package org.dtree.fhir.server.services.form
 
 import ca.uhn.fhir.parser.IParser
+import com.google.android.fhir.datacapture.XFhirQueryResolver
 import org.dtree.fhir.core.models.TracingType
 import org.dtree.fhir.core.uploader.general.FhirClient
 import org.dtree.fhir.server.plugins.tasks.ChangeAppointmentData
@@ -16,6 +17,7 @@ object FormService : KoinComponent {
     private val fetcher by inject<ResourceFetcher>()
     private val client by inject<FhirClient>()
     private val iParser by inject<IParser>()
+    private val xFhirQueryResolver by inject<XFhirQueryResolver>()
 
     fun finishVisit(body: List<FinishVisitRequest>) {
         val strMap = fetcher.fetchStructureMap("finish-visit")
@@ -36,17 +38,22 @@ object FormService : KoinComponent {
         for (entry in body) {
             val patientData = client.fetchAllPatientsActiveItems(entry.id)
             if (patientData.isEmpty()) continue
-            val questionnaireResponse = responseGenerator.generateQuestionerResponse(questionnaire, patientData)
+            var questionnaireResponse = responseGenerator.generateQuestionerResponse(questionnaire, patientData)
 
-            val response = QuestionnaireResponseUpdater(questionnaireResponse)
-            response.updateAnswerInGroup(
+            val responseUpdater = QuestionnaireResponseUpdater(
+                questionnaire,
+                questionnaireResponse,
+                patientData.toLaunchContextMap(),
+                xFhirQueryResolver,
+            )
+            responseUpdater.updateAnswerInGroup(
                 "page-5",
                 "careplan-end-date",
                 listOf(QuestionnaireResponse.QuestionnaireResponseItemAnswerComponent().apply {
                     value = DateTimeType(entry.date)
                 })
             )
-
+            questionnaireResponse = responseUpdater.getQuestionnaireResponse()
             val bundle = responseGenerator.extractBundle(questionnaire, questionnaireResponse, structureMap)
             questionnaireResponse.contained = bundle.entry.map { it.resource }
 
@@ -78,11 +85,16 @@ object FormService : KoinComponent {
             val structureMap = if (tracingType == TracingType.phone) phoneStructureMap else homeStructureMap
 
 
-            val questionnaireResponse = responseGenerator.generateQuestionerResponse(questionnaire, patientData)
+            var questionnaireResponse = responseGenerator.generateQuestionerResponse(questionnaire, patientData)
 
-            val response = QuestionnaireResponseUpdater(questionnaireResponse)
-            response.updateSingleAnswer("is-tracing-conducted", BooleanType(false))
-            response.updateAnswerInGroup(
+            val responseUpdater = QuestionnaireResponseUpdater(
+                questionnaire,
+                questionnaireResponse,
+                patientData.toLaunchContextMap(),
+                xFhirQueryResolver
+            )
+            responseUpdater.updateSingleAnswer("is-tracing-conducted", BooleanType(false))
+            responseUpdater.updateAnswerInGroup(
                 "not-conducted-group",
                 "reason-for-no-tracing",
                 listOf(QuestionnaireResponse.QuestionnaireResponseItemAnswerComponent().apply {
@@ -99,9 +111,12 @@ object FormService : KoinComponent {
                     }
                 })
             )
-
+            questionnaireResponse = responseUpdater.getQuestionnaireResponse()
+            println(iParser.encodeResourceToString(questionnaireResponse))
             val bundle = responseGenerator.extractBundle(questionnaire, questionnaireResponse, structureMap)
-            val bundleResources = bundle.entry.map { it.resource }
+            val bundleResources = bundle.entry.map {
+                it.resource
+            }
             questionnaireResponse.contained = bundleResources
 
             entriesToSave.add(questionnaireResponse)
@@ -112,9 +127,11 @@ object FormService : KoinComponent {
     }
 
     private suspend fun saveResources(resources: List<Resource>) {
+        val bundle = Bundle()
         resources.forEach {
-            println(iParser.encodeResourceToString(it))
+            bundle.addEntry().resource = it
         }
+        println(iParser.encodeResourceToString(bundle))
 //        client.bundleUpload(resources, 30)
     }
 }

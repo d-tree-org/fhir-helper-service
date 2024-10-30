@@ -6,3 +6,13 @@ data class ChangeAppointmentData(
     val id: String,
     val date: Date,
 )
+
+data class TracingEnteredErrorData(
+    val type: TracingRemovalType,
+    val data: List<String>,
+)
+
+enum class TracingRemovalType {
+    EnteredInError,
+    Deceased
+}

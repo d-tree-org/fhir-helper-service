@@ -1,6 +1,7 @@
 package org.dtree.fhir.core.models
 
 import org.dtree.fhir.core.utils.TracingHelpers
+import org.dtree.fhir.core.utils.isHomeTracingTask
 import org.hl7.fhir.r4.model.*
 
 enum class TracingType {
@@ -16,7 +17,9 @@ data class PatientData(
     val tasks: MutableList<Task> = mutableListOf(),
     val conditions: MutableList<Condition> = mutableListOf(),
     val appointments: MutableList<Appointment> = mutableListOf(),
-    val lists: MutableList<ListResource> = mutableListOf()
+    val lists: MutableList<ListResource> = mutableListOf(),
+    val tracingTasks: MutableList<Task> = mutableListOf(),
+    val currentCarePlan: CarePlan? = null,
 ) {
     fun isEmpty(): Boolean {
         return !patient.hasId() &&
@@ -34,15 +37,22 @@ data class PatientData(
         val currentCarePlan = carePlans.firstOrNull()
         val resources = conditions + guardians + observations
         val resourcesAsBundle = Bundle().apply { resources.map { this.addEntry().resource = it } }
-        val bundle = Bundle()
-        bundle.id = TracingHelpers.tracingBundleId
+
+        val tracingBundle = Bundle()
+        tracingBundle.id = TracingHelpers.tracingBundleId
 
         // TODO: filter tracing ones
-        tasks.forEach { bundle.addEntry(Bundle.BundleEntryComponent().setResource(it)) }
-        lists.forEach { bundle.addEntry(Bundle.BundleEntryComponent().setResource(it)) }
-        appointments.forEach { bundle.addEntry(Bundle.BundleEntryComponent().setResource(it)) }
+        tracingTasks.forEach { tracingBundle.addEntry(Bundle.BundleEntryComponent().setResource(it)) }
+        lists.forEach { tracingBundle.addEntry(Bundle.BundleEntryComponent().setResource(it)) }
+        appointments.forEach { tracingBundle.addEntry(Bundle.BundleEntryComponent().setResource(it)) }
 
-        resourcesAsBundle.addEntry().resource = bundle
+        resourcesAsBundle.addEntry().resource = tracingBundle
+
+        resourcesAsBundle.addEntry(
+            Bundle.BundleEntryComponent().setResource(tracingBundle).apply {
+                id = TracingHelpers.tracingBundleId
+            },
+        )
 
         val list = arrayListOf(*practitioners.toTypedArray(), resourcesAsBundle, patient)
         if (currentCarePlan != null) {
@@ -52,13 +62,16 @@ data class PatientData(
         return list
     }
 
-    fun getTracingType():TracingType {
-        return TracingType.phone
+    fun getTracingType(): TracingType {
+        val task = tracingTasks.firstOrNull() ?: return TracingType.none
+        return if (task.isHomeTracingTask()) TracingType.home else TracingType.phone
     }
 }
 
 fun Bundle.parsePatientResources(): PatientData {
     val patientData = PatientData()
+    val tasks = mutableListOf<Task>()
+    val tracingTasks = mutableListOf<Task>()
 
     this.entry?.forEach { entry ->
         // For batch responses, we need to handle the response bundle
@@ -74,7 +87,14 @@ fun Bundle.parsePatientResources(): PatientData {
                 is Observation -> patientData.observations.add(resource)
                 is Practitioner -> patientData.practitioners.add(resource)
                 is CarePlan -> patientData.carePlans.add(resource)
-                is Task -> patientData.tasks.add(resource)
+                is Task -> {
+                    if (resource.code.codingFirstRep.code == "225368008") {
+                        tracingTasks.add(resource)
+                    } else {
+                        tasks.add(resource)
+                    }
+                }
+
                 is Condition -> patientData.conditions.add(resource)
                 is Appointment -> patientData.appointments.add(resource)
                 is ListResource -> patientData.lists.add(resource)
@@ -82,5 +102,9 @@ fun Bundle.parsePatientResources(): PatientData {
         }
     }
 
-    return patientData
+    return patientData.copy(
+        tasks = tasks,
+        tracingTasks = tracingTasks,
+        carePlans = patientData.carePlans.sortedByDescending { it.period.start }.toMutableList()
+    )
 }

@@ -1,9 +1,11 @@
 package org.dtree.fhir.server.services.form
 
+import ca.uhn.fhir.parser.IParser
 import org.dtree.fhir.core.models.TracingType
 import org.dtree.fhir.core.uploader.general.FhirClient
 import org.dtree.fhir.server.plugins.tasks.ChangeAppointmentData
 import org.dtree.fhir.server.plugins.tasks.FinishVisitRequest
+import org.dtree.fhir.server.plugins.tasks.TracingRemovalType
 import org.hl7.fhir.r4.model.*
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
@@ -13,6 +15,7 @@ object FormService : KoinComponent {
     private val responseGenerator by inject<ResponseGenerator>()
     private val fetcher by inject<ResourceFetcher>()
     private val client by inject<FhirClient>()
+    private val iParser by inject<IParser>()
 
     fun finishVisit(body: List<FinishVisitRequest>) {
         val strMap = fetcher.fetchStructureMap("finish-visit")
@@ -54,7 +57,7 @@ object FormService : KoinComponent {
         saveResources(entriesToSave)
     }
 
-    suspend fun tracingEnteredInError(patients: List<String>) {
+    suspend fun tracingEnteredInError(patients: List<String>, type: TracingRemovalType) {
         val entriesToSave = mutableListOf<Resource>()
         val phoneStructureMap =
             fetcher.fetchStructureMap("structure_map/tracing/phone_tracing/phone_tracing_outcomes.map")
@@ -83,23 +86,35 @@ object FormService : KoinComponent {
                 "not-conducted-group",
                 "reason-for-no-tracing",
                 listOf(QuestionnaireResponse.QuestionnaireResponseItemAnswerComponent().apply {
-                    value = Coding().apply {
-                        code = "no-tracing-required"
-                        display = "Error, this person does not require tracing"
+                    if (type == TracingRemovalType.EnteredInError) {
+                        value = Coding().apply {
+                            code = "no-tracing-required"
+                            display = "Error, this person does not require tracing"
+                        }
+                    } else if (type == TracingRemovalType.Deceased) {
+                        value = Coding().apply {
+                            code = "deceased"
+                            display = "Deceased"
+                        }
                     }
                 })
             )
 
             val bundle = responseGenerator.extractBundle(questionnaire, questionnaireResponse, structureMap)
-            questionnaireResponse.contained = bundle.entry.map { it.resource }
-
+            val bundleResources = bundle.entry.map { it.resource }
+            questionnaireResponse.contained = bundleResources
 
             entriesToSave.add(questionnaireResponse)
-            entriesToSave.add(bundle)
+            entriesToSave.addAll(bundleResources)
         }
 
         saveResources(entriesToSave)
     }
 
-    suspend fun saveResources(resources: List<Resource>) {}
+    private suspend fun saveResources(resources: List<Resource>) {
+        resources.forEach {
+            println(iParser.encodeResourceToString(it))
+        }
+//        client.bundleUpload(resources, 30)
+    }
 }

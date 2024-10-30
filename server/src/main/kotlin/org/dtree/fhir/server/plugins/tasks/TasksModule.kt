@@ -24,8 +24,10 @@ fun Route.tasksModule() {
     }
 
     post<Tasks.Fixes.TracingEnteredError> {
-        val body = call.receive<List<String>>()
-        controller.tracingEnteredInError(body)
+        val body = call.receive<TracingEnteredErrorData>()
+
+        controller.tracingEnteredInError(body.data, body.type)
+
         call.respond("Jeff")
     }
 }

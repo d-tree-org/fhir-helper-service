@@ -150,6 +150,7 @@ class FhirClient(private val dotenv: Dotenv, private val iParser: IParser) {
     fun fetchAllPatientsActiveItems(patientId: String): PatientData {
         val bundle = Bundle()
         bundle.type = Bundle.BundleType.BATCH
+
         bundle.addEntry()
             .request
             .setMethod(Bundle.HTTPVerb.GET)
@@ -160,6 +161,10 @@ class FhirClient(private val dotenv: Dotenv, private val iParser: IParser) {
             .setMethod(Bundle.HTTPVerb.GET)
             .setUrl("Observation?subject=$patientId&status=preliminary")
 
+        bundle.addEntry()
+            .request
+            .setMethod(Bundle.HTTPVerb.GET)
+            .setUrl("CarePlan?subject=$patientId&_count=1&status=completed&_sort=-_lastUpdated")
 
         bundle.addEntry()
             .request
@@ -267,7 +272,7 @@ class FhirClient(private val dotenv: Dotenv, private val iParser: IParser) {
 fun <T : IBaseResource> IQuery<Bundle>.paginateExecute(client: FhirClient): List<T> {
     val list = mutableListOf<IBaseResource>()
 
-   var bundle = this.execute()
+    var bundle = this.execute()
     list.addAll(BundleUtil.toListOfResources(client.ctx, bundle))
 
     while (bundle.getLink(IBaseBundle.LINK_NEXT) != null) {

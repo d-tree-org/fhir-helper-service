@@ -42,6 +42,9 @@ dependencies {
     testImplementation(kotlin("test"))
     testImplementation(libs.junit.jupiter.api)
     testRuntimeOnly(libs.junit.jupiter.engine)
+
+    // https://mvnrepository.com/artifact/org.json/json
+    implementation("org.json:json:20240303")
 }
 
 

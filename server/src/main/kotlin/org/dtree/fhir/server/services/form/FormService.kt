@@ -2,12 +2,15 @@ package org.dtree.fhir.server.services.form
 
 import ca.uhn.fhir.parser.IParser
 import com.google.android.fhir.datacapture.XFhirQueryResolver
+import org.dtree.fhir.core.fhir.PatchMaker
 import org.dtree.fhir.core.models.TracingType
 import org.dtree.fhir.core.uploader.general.FhirClient
+import org.dtree.fhir.core.utils.createBundleComponent
 import org.dtree.fhir.server.plugins.tasks.ChangeAppointmentData
 import org.dtree.fhir.server.plugins.tasks.FinishVisitRequest
 import org.dtree.fhir.server.plugins.tasks.TracingRemovalType
 import org.hl7.fhir.r4.model.*
+import org.hl7.fhir.r4.model.Bundle.BundleEntryComponent
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import java.util.*
@@ -33,7 +36,7 @@ object FormService : KoinComponent {
             fetcher.fetchStructureMap("structure_map/profile/patient_edit_profile/patient_edit_profile.map")
         val questionnaire: Questionnaire =
             fetcher.getQuestionnaire("questionnaire/profile/patient_edit_profile.json")
-        val entriesToSave = mutableListOf<Resource>()
+        val entriesToSave = mutableListOf<BundleEntryComponent>()
 
         for (entry in body) {
             val patientData = client.fetchAllPatientsActiveItems(entry.id)
@@ -55,17 +58,18 @@ object FormService : KoinComponent {
             )
             questionnaireResponse = responseUpdater.getQuestionnaireResponse()
             val bundle = responseGenerator.extractBundle(questionnaire, questionnaireResponse, structureMap)
-            questionnaireResponse.contained = bundle.entry.map { it.resource }
+            val bundleResources = bundle.entry.map { it.resource }
+            questionnaireResponse.contained = bundleResources
 
-            entriesToSave.add(questionnaireResponse)
-            entriesToSave.add(bundle)
+            entriesToSave.add(questionnaireResponse.createBundleComponent())
+            entriesToSave.addAll(PatchMaker.createPatchedRequest(iParser, patientData.getAllItemMap(), bundleResources))
         }
 
         saveResources(entriesToSave)
     }
 
     suspend fun tracingEnteredInError(patients: List<String>, type: TracingRemovalType) {
-        val entriesToSave = mutableListOf<Resource>()
+        val entriesToSave = mutableListOf<BundleEntryComponent>()
         val phoneStructureMap =
             fetcher.fetchStructureMap("structure_map/tracing/phone_tracing/phone_tracing_outcomes.map")
         val homeStructureMap =
@@ -119,19 +123,20 @@ object FormService : KoinComponent {
             }
             questionnaireResponse.contained = bundleResources
 
-            entriesToSave.add(questionnaireResponse)
-            entriesToSave.addAll(bundleResources)
+            entriesToSave.add(questionnaireResponse.createBundleComponent())
+            entriesToSave.addAll(PatchMaker.createPatchedRequest(iParser, patientData.getAllItemMap(), bundleResources))
         }
 
         saveResources(entriesToSave)
     }
 
-    private suspend fun saveResources(resources: List<Resource>) {
+    private suspend fun saveResources(resources: List<BundleEntryComponent>) {
         val bundle = Bundle()
         resources.forEach {
-            bundle.addEntry().resource = it
+            bundle.addEntry(it)
         }
         println(iParser.encodeResourceToString(bundle))
-//        client.bundleUpload(resources, 30)
+
+        client.bundleUpload(resources, 30)
     }
 }

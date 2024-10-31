@@ -70,6 +70,12 @@ data class PatientData(
     fun toLaunchContextMap(): Map<String, Resource>? {
         return null
     }
+
+    fun getAllItemMap(): Map<String, Resource> {
+        val items =
+            listOf(patient) + guardians + linkedPatients + observations + practitioners + carePlans + tasks + conditions + appointments + lists + tracingTasks
+        return items.associateBy { it.logicalId }
+    }
 }
 
 fun Bundle.parsePatientResources(patientId: String): PatientData {

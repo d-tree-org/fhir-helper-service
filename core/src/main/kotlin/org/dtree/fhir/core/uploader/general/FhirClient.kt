@@ -204,7 +204,7 @@ class FhirClient(private val dotenv: Dotenv, private val iParser: IParser) {
     ) {
         val totalBatches = if (list.size % batchSize == 0) list.size / batchSize else list.size / batchSize + 1
 
-        for (batchIndex in 0 until totalBatches) {
+        for (batchIndex in 0..<totalBatches) {
             val start = batchIndex * batchSize
             val end = minOf((batchIndex + 1) * batchSize, list.size)
             val batchFiles = list.subList(start, end)

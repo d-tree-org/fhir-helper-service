@@ -1,6 +1,5 @@
 package org.dtree.fhir.server.services.form
 
-import ca.uhn.fhir.parser.IParser
 import com.github.mustachejava.DefaultMustacheFactory
 import com.github.mustachejava.MustacheFactory
 import com.google.android.fhir.datacapture.mapping.ResourceMapper
@@ -12,7 +11,6 @@ import org.dtree.fhir.core.utils.asYyyyMmDd
 import org.dtree.fhir.core.utils.category
 import org.dtree.fhir.core.utils.logicalId
 import org.hl7.fhir.r4.model.*
-import org.hl7.fhir.r4.utils.StructureMapUtilities
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import java.io.ByteArrayOutputStream
@@ -78,16 +76,19 @@ class ResponseGenerator : KoinComponent {
         questionnaireResponse: QuestionnaireResponse,
         structureMap: StructureMap
     ): Bundle {
-        return ResourceMapper.extract(
-            questionnaire = questionnaire,
-            questionnaireResponse = questionnaireResponse,
-            StructureMapExtractionContext(
-                transformSupportServices = transformSupportServices,
-                structureMapProvider = { _, _ ->
-                    return@StructureMapExtractionContext structureMap
-                },
-                workerContext = fhirProvider.context,
-            ),
-        )
+        val targetResource = Bundle()
+        fhirProvider.scu().transform(fhirProvider.context, questionnaireResponse, structureMap, targetResource)
+        return targetResource
+//        ResourceMapper.extract(
+//            questionnaire = questionnaire,
+//            questionnaireResponse = questionnaireResponse,
+//            StructureMapExtractionContext(
+//                transformSupportServices = transformSupportServices,
+//                structureMapProvider = { _, _ ->
+//                    return@StructureMapExtractionContext structureMap
+//                },
+//                workerContext = fhirProvider.context,
+//            ),
+//        )
     }
 }

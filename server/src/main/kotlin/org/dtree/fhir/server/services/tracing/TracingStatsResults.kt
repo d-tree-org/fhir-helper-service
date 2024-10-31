@@ -2,8 +2,9 @@ package org.dtree.fhir.server.services.tracing
 
 import java.time.LocalDate
 
-class TracingStatsResults {
-}
+data class TracingStatsResults(
+   val count: Int
+)
 
 data class TracingResult(
     val uuid: String,

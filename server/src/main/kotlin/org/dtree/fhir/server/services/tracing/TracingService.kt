@@ -22,7 +22,7 @@ object TracingService : KoinComponent {
 
 
     fun getStats(id: String): TracingStatsResults {
-        TODO("Not yet implemented")
+        return TracingStatsResults(getTracingList(id, LocalDate.now()).results.size)
     }
 
     fun getTracingList(facilityId: String, date: LocalDate): TracingListResults {
@@ -95,9 +95,9 @@ object TracingService : KoinComponent {
     }
 
     suspend fun setTracingEnteredInError(patientId: List<String>) {
-
+        var request = "Task?patient=${patientId.joinToString(",")}&status=ready,in-progress,requested,on-hold,on-hold"
         val tasks: List<Task> = client.fhirClient.search<Bundle>().forResource(Task::class.java)
-            .where(Task.PATIENT.hasAnyOfIds(patientId))
+            .where(Task.PATIENT.hasAnyOfIds(*patientId.toTypedArray()))
             .where(
                 TokenClientParam("_tag").exactly()
                     .codings(ReasonConstants.homeTracingCoding, ReasonConstants.phoneTracingCoding)
@@ -111,7 +111,10 @@ object TracingService : KoinComponent {
                     Task.TaskStatus.ONHOLD.toCode()
                 )
             )
-            .paginateExecute<Task>(client).map { task ->
+            .paginateExecute<Task>(client).mapNotNull { task ->
+                if (task.status == Task.TaskStatus.COMPLETED || task.status == Task.TaskStatus.CANCELLED || task.status == Task.TaskStatus.ENTEREDINERROR) {
+                    return@mapNotNull null
+                }
                 task.meta.addTag(
                     ReasonConstants.resourceEnteredInError
                 )

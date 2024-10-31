@@ -1,7 +1,6 @@
 package org.dtree.fhir.server.plugins.tracing
 
 import io.ktor.resources.*
-import java.time.LocalDate
 
 @Resource("/tracing")
 class Tracing() {

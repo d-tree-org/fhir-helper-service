@@ -76,19 +76,16 @@ class ResponseGenerator : KoinComponent {
         questionnaireResponse: QuestionnaireResponse,
         structureMap: StructureMap
     ): Bundle {
-        val targetResource = Bundle()
-        fhirProvider.scu().transform(fhirProvider.context, questionnaireResponse, structureMap, targetResource)
-        return targetResource
-//        ResourceMapper.extract(
-//            questionnaire = questionnaire,
-//            questionnaireResponse = questionnaireResponse,
-//            StructureMapExtractionContext(
-//                transformSupportServices = transformSupportServices,
-//                structureMapProvider = { _, _ ->
-//                    return@StructureMapExtractionContext structureMap
-//                },
-//                workerContext = fhirProvider.context,
-//            ),
-//        )
+        return ResourceMapper.extract(
+            questionnaire = questionnaire,
+            questionnaireResponse = questionnaireResponse,
+            StructureMapExtractionContext(
+                transformSupportServices = transformSupportServices,
+                structureMapProvider = { _, _ ->
+                    return@StructureMapExtractionContext structureMap
+                },
+                workerContext = fhirProvider.context,
+            ),
+        )
     }
 }

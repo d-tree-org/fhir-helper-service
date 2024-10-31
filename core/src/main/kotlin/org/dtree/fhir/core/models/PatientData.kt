@@ -1,6 +1,7 @@
 package org.dtree.fhir.core.models
 
 import org.dtree.fhir.core.utils.TracingHelpers
+import org.dtree.fhir.core.utils.extractId
 import org.dtree.fhir.core.utils.isHomeTracingTask
 import org.dtree.fhir.core.utils.logicalId
 import org.hl7.fhir.r4.model.*
@@ -16,6 +17,7 @@ data class PatientData(
     val observations: MutableList<Observation> = mutableListOf(),
     val practitioners: MutableList<Practitioner> = mutableListOf(),
     val carePlans: MutableList<CarePlan> = mutableListOf(),
+    val oldCarePlans: MutableList<CarePlan> = mutableListOf(),
     val tasks: MutableList<Task> = mutableListOf(),
     val conditions: MutableList<Condition> = mutableListOf(),
     val appointments: MutableList<Appointment> = mutableListOf(),
@@ -37,6 +39,8 @@ data class PatientData(
 
     fun toPopulationResource(): List<Resource> {
         val currentCarePlan = carePlans.firstOrNull()
+        val lastCarePlan = oldCarePlans.firstOrNull()
+
         val resources = conditions + guardians + observations
         val resourcesAsBundle = Bundle().apply { resources.map { this.addEntry().resource = it } }
 
@@ -47,6 +51,10 @@ data class PatientData(
         tracingTasks.forEach { tracingBundle.addEntry(Bundle.BundleEntryComponent().setResource(it)) }
         lists.forEach { tracingBundle.addEntry(Bundle.BundleEntryComponent().setResource(it)) }
         appointments.forEach { tracingBundle.addEntry(Bundle.BundleEntryComponent().setResource(it)) }
+
+        if (lastCarePlan != null) {
+            tracingBundle.addEntry(Bundle.BundleEntryComponent().setResource(lastCarePlan))
+        }
 
         resourcesAsBundle.addEntry(
             Bundle.BundleEntryComponent().setResource(tracingBundle).apply {
@@ -78,9 +86,9 @@ data class PatientData(
     }
 }
 
-fun Bundle.parsePatientResources(patientId: String): PatientData {
+fun Bundle.parsePatientResources(patientId: String): Pair<List<String>, PatientData> {
     val patientData = PatientData()
-    val tasks = mutableListOf<Task>()
+    val tasks = mutableMapOf<String, Task>()
     val tracingTasks = mutableListOf<Task>()
 
     this.entry?.forEach { entry ->
@@ -108,7 +116,7 @@ fun Bundle.parsePatientResources(patientId: String): PatientData {
                     if (resource.code.codingFirstRep.code == "225368008") {
                         tracingTasks.add(resource)
                     } else {
-                        tasks.add(resource)
+                        tasks[resource.logicalId] = resource
                     }
                 }
 
@@ -119,9 +127,25 @@ fun Bundle.parsePatientResources(patientId: String): PatientData {
         }
     }
 
-    return patientData.copy(
-        tasks = tasks,
+    val allCarePlans = patientData.carePlans.sortedByDescending { it.period.start }
+    val activeCarePlans =
+        allCarePlans.filter { it.status == CarePlan.CarePlanStatus.ACTIVE || it.status == CarePlan.CarePlanStatus.ONHOLD }
+            .toMutableList()
+    val currentCarePlan = activeCarePlans.firstOrNull()
+
+    var taskIds = listOf<String>()
+    if (currentCarePlan != null) {
+        taskIds = currentCarePlan.activity.mapNotNull {
+            val id = it.outcomeReference.firstOrNull()?.extractId()
+            if (!tasks.contains(id)) id else null
+        }
+    }
+
+    return Pair(taskIds, patientData.copy(
+        tasks = tasks.values.toMutableList(),
         tracingTasks = tracingTasks,
-        carePlans = patientData.carePlans.sortedByDescending { it.period.start }.toMutableList()
-    )
+        carePlans = activeCarePlans,
+        oldCarePlans = allCarePlans.filter { it.status != CarePlan.CarePlanStatus.ACTIVE && it.status != CarePlan.CarePlanStatus.ONHOLD }
+            .toMutableList(),
+    ))
 }

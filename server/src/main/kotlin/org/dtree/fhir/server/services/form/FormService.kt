@@ -57,6 +57,7 @@ object FormService : KoinComponent {
                 })
             )
             questionnaireResponse = responseUpdater.getQuestionnaireResponse()
+            println(iParser.encodeResourceToString(questionnaireResponse))
             val bundle = responseGenerator.extractBundle(questionnaire, questionnaireResponse, structureMap)
             val bundleResources = bundle.entry.map { it.resource }
             questionnaireResponse.contained = bundleResources
@@ -136,7 +137,7 @@ object FormService : KoinComponent {
             bundle.addEntry(it)
         }
         println(iParser.encodeResourceToString(bundle))
-
+throw  Exception("jeff")
         client.bundleUpload(resources, 30)
     }
 }

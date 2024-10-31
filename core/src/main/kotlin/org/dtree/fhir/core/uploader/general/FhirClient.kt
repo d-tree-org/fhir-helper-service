@@ -21,10 +21,7 @@ import org.dtree.fhir.core.utils.Logger
 import org.dtree.fhir.core.utils.logicalId
 import org.hl7.fhir.instance.model.api.IBaseBundle
 import org.hl7.fhir.instance.model.api.IBaseResource
-import org.hl7.fhir.r4.model.Appointment
-import org.hl7.fhir.r4.model.Bundle
-import org.hl7.fhir.r4.model.Resource
-import org.hl7.fhir.r4.model.ResourceType
+import org.hl7.fhir.r4.model.*
 import java.util.concurrent.TimeUnit
 
 
@@ -125,13 +122,21 @@ class FhirClient(private val dotenv: Dotenv, private val iParser: IParser) {
         return fetchBundle(listOf(item)).entry.first().resource as Bundle
     }
 
-    fun fetchResourcesFromList(type: ResourceType, ids: List<String>): Bundle {
+    fun <T : BaseResource> fetchResourcesFromList(type: ResourceType, ids: List<String>): List<T> {
         val item = Bundle.BundleEntryRequestComponent().apply {
             method = Bundle.HTTPVerb.GET
             url = "${type.name}?_id=${ids.joinToString(",")}"
             id = "filter"
         }
-        return fetchBundle(listOf(item)).entry.first().resource as Bundle
+        val items = mutableListOf<Resource>()
+        for (entry in fetchBundle(listOf(item)).entry) {
+            val resources = when {
+                entry.resource is Bundle -> (entry.resource as Bundle).entry?.map { it.resource } ?: emptyList()
+                else -> listOf(entry.resource)
+            }
+            items.addAll(resources)
+        }
+        return items.toList() as List<T>
     }
 
     /**
@@ -169,7 +174,7 @@ class FhirClient(private val dotenv: Dotenv, private val iParser: IParser) {
         bundle.addEntry()
             .request
             .setMethod(Bundle.HTTPVerb.GET)
-            .setUrl("CarePlan?subject=$patientId&status=active,on-hold")
+            .setUrl("CarePlan?subject=$patientId&status=active,on-hold&_revinclude=Task:based-on")
 
         bundle.addEntry()
             .request
@@ -192,10 +197,18 @@ class FhirClient(private val dotenv: Dotenv, private val iParser: IParser) {
             .setUrl("List?subject=$patientId&status=current")
 
         println(iParser.encodeResourceToString(bundle))
-        return fhirClient.transaction()
+        var data = fhirClient.transaction()
             .withBundle(bundle)
             .prettyPrint()
             .execute().parsePatientResources(patientId)
+        val patientData = data.second
+
+        if (data.first.isNotEmpty()) {
+            val tasks = fetchResourcesFromList<Task>(ResourceType.Task, data.first)
+            patientData.tasks.addAll(tasks)
+        }
+
+        return patientData
     }
 
     suspend fun bundleUpload(
@@ -233,8 +246,7 @@ class FhirClient(private val dotenv: Dotenv, private val iParser: IParser) {
                     if (res.hasId()) {
                         method = Bundle.HTTPVerb.PUT
                         url = "${res.resourceType.name}/${res.logicalId}"
-                    }
-                    else {
+                    } else {
                         method = Bundle.HTTPVerb.POST
                         url = res.resourceType.name
                     }

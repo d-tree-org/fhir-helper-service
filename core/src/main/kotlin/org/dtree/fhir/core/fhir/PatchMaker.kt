@@ -26,11 +26,17 @@ object PatchMaker {
                     versionId = resource.meta.versionId,
                     timestamp = Instant.now(),
                     type = LocalChange.Type.INSERT,
-                    payload = iParser.encodeResourceToString(resource),
+                    payload = iParser.encodeResourceToString(resource.apply {
+                        id = logicalId
+                    }),
                     token = LocalChangeToken(listOf())
                 ).createPatchRequest(iParser, resource)
 
-            val jsonDiff = patch(iParser, oldResource, resource)
+            val jsonDiff = patch(iParser, oldResource.apply {
+                id = logicalId
+            }, resource.apply {
+                id = logicalId
+            })
             return@mapNotNull if (jsonDiff == null) {
                 null
             } else {

@@ -5,34 +5,7 @@ import org.hl7.fhir.r4.model.Coding
 import org.hl7.fhir.r4.model.Identifier
 import org.hl7.fhir.r4.model.Patient
 
-fun Patient.extractOfficialIdentifier(): String? {
-    val patientTypes =
-        this.meta.tag
-            .filter { it.system == SystemConstants.PATIENT_TYPE_FILTER_TAG_VIA_META_CODINGS_SYSTEM }
-            .map { it.code }
-    val patientType: String? = SystemConstants.getCodeByPriority(patientTypes)
-    return if (this.hasIdentifier() && patientType != null) {
-        var actualId: Identifier? = null
-        var hasNewSystem = false
-        for (pId in this.identifier) {
-            if (pId.system?.contains("https://d-tree.org/fhir/patient-identifier") == true) {
-                hasNewSystem = true
-            }
-            if (pId.system == SystemConstants.getIdentifierSystemFromPatientType(patientType)) {
-                actualId = pId
-            }
-        }
-        if (!hasNewSystem) {
-            this.identifier
-                .lastOrNull { it.use == Identifier.IdentifierUse.OFFICIAL && it.system != "WHO-HCID" }
-                ?.value
-        } else {
-            actualId?.value
-        }
-    } else {
-        null
-    }
-}
+
 
 object SystemConstants {
     const val REASON_CODE_SYSTEM = "https://d-tree.org/fhir/reason-code"

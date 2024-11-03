@@ -28,8 +28,7 @@ class TracingControllerImpl : TracingController, BaseController(), KoinComponent
             true
         } catch (e: Exception) {
             false
-        }
-    }
+        }}
 }
 
 interface TracingController {

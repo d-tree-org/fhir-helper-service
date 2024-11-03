@@ -50,7 +50,6 @@ data class PatientData(
         // TODO: filter tracing ones
         tracingTasks.forEach { tracingBundle.addEntry(Bundle.BundleEntryComponent().setResource(it)) }
         lists.forEach { tracingBundle.addEntry(Bundle.BundleEntryComponent().setResource(it)) }
-        appointments.forEach { tracingBundle.addEntry(Bundle.BundleEntryComponent().setResource(it)) }
 
         if (lastCarePlan != null) {
             tracingBundle.addEntry(Bundle.BundleEntryComponent().setResource(lastCarePlan))
@@ -61,6 +60,7 @@ data class PatientData(
                 id = TracingHelpers.tracingBundleId
             },
         )
+        appointments.forEach { resourcesAsBundle.addEntry(Bundle.BundleEntryComponent().setResource(it)) }
 
         val list = arrayListOf(*practitioners.toTypedArray(), resourcesAsBundle, patient)
         if (currentCarePlan != null) {

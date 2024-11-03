@@ -2,9 +2,11 @@ package org.dtree.fhir.server.services.form
 
 import ca.uhn.fhir.parser.IParser
 import com.google.android.fhir.datacapture.XFhirQueryResolver
+import org.apache.commons.lang3.time.DateUtils
 import org.dtree.fhir.core.fhir.PatchMaker
 import org.dtree.fhir.core.models.TracingType
 import org.dtree.fhir.core.uploader.general.FhirClient
+import org.dtree.fhir.core.utils.asYyyyMmDd
 import org.dtree.fhir.core.utils.createBundleComponent
 import org.dtree.fhir.server.plugins.tasks.ChangeAppointmentData
 import org.dtree.fhir.server.plugins.tasks.FinishVisitRequest
@@ -42,6 +44,16 @@ object FormService : KoinComponent {
             val patientData = client.fetchAllPatientsActiveItems(entry.id)
             if (patientData.isEmpty()) continue
             var questionnaireResponse = responseGenerator.generateQuestionerResponse(questionnaire, patientData)
+
+
+            if (patientData.currentCarePlan?.period?.end != null && DateUtils.isSameDay(
+                    patientData.currentCarePlan?.period?.end,
+                    entry.date
+                )
+            ) {
+                println("The date is already the same ${entry.id} - ${entry.date.asYyyyMmDd()}")
+                continue
+            }
 
             val responseUpdater = QuestionnaireResponseUpdater(
                 questionnaire,
@@ -132,12 +144,13 @@ object FormService : KoinComponent {
     }
 
     private suspend fun saveResources(resources: List<BundleEntryComponent>) {
+        if (resources.isEmpty()) return
         val bundle = Bundle()
         resources.forEach {
             bundle.addEntry(it)
         }
         println(iParser.encodeResourceToString(bundle))
-throw  Exception("jeff")
+        throw Exception("jeff")
         client.bundleUpload(resources, 30)
     }
 }

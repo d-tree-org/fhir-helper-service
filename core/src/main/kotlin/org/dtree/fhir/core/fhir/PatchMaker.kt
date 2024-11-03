@@ -54,7 +54,7 @@ object PatchMaker {
     }
 
     fun patch(iParser: IParser, oldResource: Resource, updatedResource: Resource): String? {
-        val jsonDiff = diff(iParser, oldResource, updatedResource)
+        val jsonDiff: JSONArray = diff(iParser, oldResource, updatedResource)
         if (jsonDiff.length() == 0) {
             println("New resource same as last one")
             return null
@@ -79,7 +79,8 @@ object PatchMaker {
                 (0..<length())
                     .map { optJSONObject(it) }
                     .filterNot { jsonObject ->
-                        ignorePaths.any { jsonObject.optString("path").startsWith(it) }
+                        ignorePaths.any { jsonObject.optString("path").startsWith(it) } || jsonObject.optString("op")
+                            .equals("remove")
                     },
             )
         }

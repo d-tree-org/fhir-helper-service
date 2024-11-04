@@ -33,6 +33,11 @@ fun Route.tracingModule() {
         call.respond(result)
     }
 
+    post<Tracing.Facility.Id.CleanFutureDate> {facility ->
+        val result = controller.cleanFutureDateMissedAppointment(facility.parent.id)
+        call.respond(result)
+    }
+
     post<Tracing.EnteredInError> {
         val patients = call.receive<List<String>>()
         if (patients.isEmpty()) return@post call.respond(HttpStatusCode.BadRequest, "Patients empty")

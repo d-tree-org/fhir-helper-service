@@ -14,6 +14,9 @@ class Tracing() {
 
             @Resource("all")
             class All(val parent: Id = Facility.Id(), val date: String? = "")
+
+            @Resource("clean-future-date")
+            class CleanFutureDate(val parent: Id = Facility.Id())
         }
     }
     @Resource("entered-in-error")

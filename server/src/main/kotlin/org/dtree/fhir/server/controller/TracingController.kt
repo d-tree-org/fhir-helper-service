@@ -21,14 +21,24 @@ class TracingControllerImpl : TracingController, BaseController(), KoinComponent
 
     override suspend fun setPatientsEnteredInError(patients: List<String>): Boolean {
         return try {
-            patients.chunked(30).mapIndexed {  idx, chunk ->
+            patients.chunked(30).mapIndexed { idx, chunk ->
                 tracingService.setTracingEnteredInError(chunk)
                 println("Finished chuck ${idx + 1} - size ${chunk.size}")
             }
             true
         } catch (e: Exception) {
             false
-        }}
+        }
+    }
+
+    override suspend fun cleanFutureDateMissedAppointment(facilityId: String): Boolean {
+        return try {
+            tracingService.cleanFutureDateMissedAppointment(facilityId)
+            true
+        } catch (e: Exception) {
+            false
+        }
+    }
 }
 
 interface TracingController {
@@ -37,4 +47,5 @@ interface TracingController {
     fun getTracingList(facilityId: String, date: LocalDate): TracingListResults
 
     suspend fun setPatientsEnteredInError(patients: List<String>): Boolean
+    suspend fun cleanFutureDateMissedAppointment(facilityId: String): Boolean
 }

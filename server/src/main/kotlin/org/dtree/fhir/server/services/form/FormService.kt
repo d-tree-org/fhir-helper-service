@@ -36,11 +36,12 @@ object FormService : KoinComponent {
     suspend fun changeAppointmentData(body: List<ChangeAppointmentData>) {
         val structureMap =
             fetcher.fetchStructureMap("structure_map/profile/patient_edit_profile/patient_edit_profile.map")
-        val questionnaire: Questionnaire =
+        val questionnaireRaw: Questionnaire =
             fetcher.getQuestionnaire("questionnaire/profile/patient_edit_profile.json")
         val entriesToSave = mutableListOf<BundleEntryComponent>()
 
         for (entry in body) {
+            val questionnaire = questionnaireRaw.copy()
             val patientData = client.fetchAllPatientsActiveItems(entry.id)
             if (patientData.isEmpty()) continue
             var questionnaireResponse = responseGenerator.generateQuestionerResponse(questionnaire, patientData)
@@ -71,7 +72,18 @@ object FormService : KoinComponent {
             questionnaireResponse = responseUpdater.getQuestionnaireResponse()
             println(iParser.encodeResourceToString(questionnaireResponse))
             val bundle = responseGenerator.extractBundle(questionnaire, questionnaireResponse, structureMap)
-            val bundleResources = bundle.entry.map { it.resource }
+            val bundleResources = bundle.entry.map {
+                val resource = it.resource
+                if (resource is Appointment) {
+                    val idx = resource.participant.indexOfFirst { it.actor.reference.contains("Practitioner/Practitioner/")  }
+                    if (idx != -1) {
+                        resource.participant[idx] = resource.participant[idx].apply {
+                            actor.reference = actor.reference.replace("Practitioner/Practitioner/", "Practitioner/")
+                        }
+                    }
+                }
+                resource
+            }
             questionnaireResponse.contained = bundleResources
 
             entriesToSave.add(questionnaireResponse.createBundleComponent())
@@ -98,7 +110,7 @@ object FormService : KoinComponent {
             val tracingType = patientData.getTracingType()
             if (tracingType == TracingType.none) continue
 
-            val questionnaire = if (tracingType == TracingType.phone) phoneQuestionnaire else homeQuestionnaire
+            val questionnaire = if (tracingType == TracingType.phone) phoneQuestionnaire.copy() else homeQuestionnaire.copy()
             val structureMap = if (tracingType == TracingType.phone) phoneStructureMap else homeStructureMap
 
 
@@ -131,9 +143,7 @@ object FormService : KoinComponent {
             questionnaireResponse = responseUpdater.getQuestionnaireResponse()
             println(iParser.encodeResourceToString(questionnaireResponse))
             val bundle = responseGenerator.extractBundle(questionnaire, questionnaireResponse, structureMap)
-            val bundleResources = bundle.entry.map {
-                it.resource
-            }
+            val bundleResources = bundle.entry.map { it.resource }
             questionnaireResponse.contained = bundleResources
 
             entriesToSave.add(questionnaireResponse.createBundleComponent())
@@ -150,7 +160,7 @@ object FormService : KoinComponent {
             bundle.addEntry(it)
         }
         println(iParser.encodeResourceToString(bundle))
-        throw Exception("jeff")
+//        throw Exception("Jeff")
         client.bundleUpload(resources, 30)
     }
 }

@@ -99,7 +99,6 @@ object TracingService : KoinComponent {
     }
 
     suspend fun setTracingEnteredInError(patientId: List<String>) {
-        var request = "Task?patient=${patientId.joinToString(",")}&status=ready,in-progress,requested,on-hold,on-hold"
         val tasks: List<Task> = client.fhirClient.search<Bundle>().forResource(Task::class.java)
             .where(Task.PATIENT.hasAnyOfIds(*patientId.toTypedArray()))
             .where(
@@ -131,6 +130,15 @@ object TracingService : KoinComponent {
             return
         }
         client.bundleUpload(tasks, 30)
+    }
+
+    suspend fun cleanFutureDateMissedAppointment(facilityId: String) {
+        val results = getTracingList(facilityId, LocalDate.now()).results.mapNotNull {
+            if(it.isFutureAppointment == true) it.uuid
+            else null
+        }
+        if (results.isEmpty()) return
+        setTracingEnteredInError(results)
     }
 }
 

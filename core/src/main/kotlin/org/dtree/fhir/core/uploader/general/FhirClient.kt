@@ -9,10 +9,7 @@ import ca.uhn.fhir.util.BundleUtil
 import io.github.cdimascio.dotenv.Dotenv
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import okhttp3.logging.HttpLoggingInterceptor
 import org.dtree.fhir.core.models.PatientData
@@ -119,7 +116,8 @@ class FhirClient(private val dotenv: Dotenv, private val iParser: IParser) {
             }&_count=20000"
             id = "filter"
         }
-        return fetchBundle(listOf(item)).entry.first().resource as Bundle
+        val bundle = fetchBundle(listOf(item))
+        return bundle.entry.first().resource as Bundle
     }
 
     fun <T : BaseResource> fetchResourcesFromList(type: ResourceType, ids: List<String>): List<T> {

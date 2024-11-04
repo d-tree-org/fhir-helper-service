@@ -37,6 +37,18 @@ data class PatientData(
                 lists.isEmpty()
     }
 
+    fun toBundle(): Bundle {
+        val bundle = Bundle()
+        val entries =
+            (listOf(patient) + guardians + linkedPatients + observations + practitioners + carePlans + oldCarePlans + tasks + conditions + appointments + lists + tracingTasks).map { resourceToAdd ->
+                Bundle.BundleEntryComponent().apply {
+                    resource = resourceToAdd
+                }
+            }
+        bundle.entry.addAll(entries)
+        return bundle
+    }
+
     fun toPopulationResource(): List<Resource> {
         val currentCarePlan = carePlans.firstOrNull()
         val lastCarePlan = oldCarePlans.firstOrNull()

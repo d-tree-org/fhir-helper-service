@@ -122,24 +122,38 @@ object FormService : KoinComponent {
                 patientData.toLaunchContextMap(),
                 xFhirQueryResolver
             )
-            responseUpdater.updateSingleAnswer("is-tracing-conducted", BooleanType(false))
-            responseUpdater.updateAnswerInGroup(
-                "not-conducted-group",
-                "reason-for-no-tracing",
-                listOf(QuestionnaireResponse.QuestionnaireResponseItemAnswerComponent().apply {
-                    if (type == TracingRemovalType.EnteredInError) {
-                        value = Coding().apply {
-                            code = "no-tracing-required"
-                            display = "Error, this person does not require tracing"
+            if (type != TracingRemovalType.TransferredOut) {
+                responseUpdater.updateSingleAnswer("is-tracing-conducted", BooleanType(false))
+                responseUpdater.updateAnswerInGroup(
+                    "not-conducted-group",
+                    "reason-for-no-tracing",
+                    listOf(QuestionnaireResponse.QuestionnaireResponseItemAnswerComponent().apply {
+                        if (type == TracingRemovalType.EnteredInError) {
+                            value = Coding().apply {
+                                code = "no-tracing-required"
+                                display = "Error, this person does not require tracing"
+                            }
+                        } else if (type == TracingRemovalType.Deceased) {
+                            value = Coding().apply {
+                                code = "deceased"
+                                display = "Deceased"
+                            }
                         }
-                    } else if (type == TracingRemovalType.Deceased) {
+                    })
+                )
+            } else {
+                responseUpdater.updateSingleAnswer("is-tracing-conducted", BooleanType(true))
+                responseUpdater.updateAnswerInGroup(
+                    "conducted-group",
+                    "tracing-outcome",
+                    listOf(QuestionnaireResponse.QuestionnaireResponseItemAnswerComponent().apply {
                         value = Coding().apply {
-                            code = "deceased"
-                            display = "Deceased"
+                            code = "transfer-out"
+                            display = "Transfer Out"
                         }
-                    }
-                })
-            )
+                    })
+                )
+            }
             questionnaireResponse = responseUpdater.getQuestionnaireResponse()
             println(iParser.encodeResourceToString(questionnaireResponse))
             val bundle = responseGenerator.extractBundle(questionnaire, questionnaireResponse, structureMap)

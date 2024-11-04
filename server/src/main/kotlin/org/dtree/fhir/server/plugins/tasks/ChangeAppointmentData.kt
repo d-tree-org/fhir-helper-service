@@ -14,5 +14,6 @@ data class TracingEnteredErrorData(
 
 enum class TracingRemovalType {
     EnteredInError,
+    TransferredOut,
     Deceased
 }

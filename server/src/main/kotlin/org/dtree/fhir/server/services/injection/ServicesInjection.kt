@@ -1,6 +1,7 @@
 package org.dtree.fhir.server.services.injection
 
 import org.dtree.fhir.server.services.form.FormService
+import org.dtree.fhir.server.services.patient.PatientService
 import org.dtree.fhir.server.services.stats.StatsService
 import org.dtree.fhir.server.services.tracing.TracingService
 import org.koin.dsl.module
@@ -10,5 +11,6 @@ object ServicesInjection {
         single<FormService> { FormService }
         single<StatsService> { StatsService }
         single<TracingService> { TracingService }
+        single<PatientService> { PatientService }
     }
 }

@@ -34,6 +34,7 @@ object ModulesInjection {
         single<AppointmentController> { AppointmentControllerImpl() }
         single<CarePlanController> { CarePlanControllerImpl() }
         single<TasksController> { TasksControllerImpl() }
+        single<PatientController> { PatientControllerImpl() }
 
         single<FhirClient> { FhirClient(this.get<Dotenv>(), this.get<FhirProvider>().parser) }
 

@@ -13,6 +13,7 @@ import io.ktor.server.routing.*
 import io.ktor.server.routing.get
 import org.dtree.fhir.server.plugins.appointment.appointmentModule
 import org.dtree.fhir.server.plugins.careplan.carePlanModule
+import org.dtree.fhir.server.plugins.patient.patientModule
 import org.dtree.fhir.server.plugins.stats.statsModule
 import org.dtree.fhir.server.plugins.tasks.tasksModule
 import org.dtree.fhir.server.plugins.tracing.tracingModule
@@ -53,6 +54,7 @@ fun Application.configureRouting() {
         appointmentModule()
         carePlanModule()
         tasksModule()
+        patientModule()
 
         get("/") {
             call.respondText("Hello, World!")

@@ -15,6 +15,10 @@ fun Route.patientModule() {
 
     get<PatientResource.Id> { patient ->
         val bundle = controller.fetchPatientActiveResource(patient.id)
+        if (bundle == null) {
+            call.respond(HttpStatusCode.BadRequest, "Could not find patient")
+            return@get
+        }
         call.respondText(
             iParser.encodeResourceToString(bundle),
             ContentType.Application.Json,

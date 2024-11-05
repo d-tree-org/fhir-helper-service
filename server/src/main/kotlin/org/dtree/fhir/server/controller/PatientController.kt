@@ -7,11 +7,15 @@ import org.koin.core.component.inject
 
 class PatientControllerImpl : PatientController, BaseController(), KoinComponent {
     private val patientService by inject<PatientService>()
-    override fun fetchPatientActiveResource(patientId: String): Bundle {
-        return patientService.fetchPatientActiveResource(patientId).toBundle()
+    override fun fetchPatientActiveResource(patientId: String): Bundle? {
+        val patientData = patientService.fetchPatientActiveResource(patientId)
+        if (patientData.isEmpty()) {
+            return null
+        }
+        return patientData.toBundle()
     }
 }
 
 interface PatientController {
-    fun fetchPatientActiveResource(patientId: String): Bundle
+    fun fetchPatientActiveResource(patientId: String): Bundle?
 }

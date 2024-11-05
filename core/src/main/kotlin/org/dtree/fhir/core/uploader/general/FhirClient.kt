@@ -195,7 +195,7 @@ class FhirClient(private val dotenv: Dotenv, private val iParser: IParser) {
             .setUrl("List?subject=$patientId&status=current")
 
         println(iParser.encodeResourceToString(bundle))
-        var data = fhirClient.transaction()
+        val data = fhirClient.transaction()
             .withBundle(bundle)
             .prettyPrint()
             .execute().parsePatientResources(patientId)

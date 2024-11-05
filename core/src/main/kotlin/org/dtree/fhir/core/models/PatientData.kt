@@ -40,12 +40,16 @@ data class PatientData(
     fun toBundle(): Bundle {
         val bundle = Bundle()
         val entries =
-            (listOf(patient) + guardians + linkedPatients + observations + practitioners + carePlans + oldCarePlans + tasks + conditions + appointments + lists + tracingTasks).map { resourceToAdd ->
+            (listOf(patient) + guardians + linkedPatients + observations + practitioners + carePlans + oldCarePlans + tasks + conditions + appointments + lists + tracingTasks)
+
+        entries.forEach { resourceToAdd ->
+            bundle.entry.add(
                 Bundle.BundleEntryComponent().apply {
                     resource = resourceToAdd
                 }
-            }
-        bundle.entry.addAll(entries)
+            )
+        }
+
         return bundle
     }
 

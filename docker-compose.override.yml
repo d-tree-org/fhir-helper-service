@@ -1,0 +1,3 @@
+services:
+  fhir-service:
+    image: ghcr.io/d-tree-org/fhir-helper-service:dev

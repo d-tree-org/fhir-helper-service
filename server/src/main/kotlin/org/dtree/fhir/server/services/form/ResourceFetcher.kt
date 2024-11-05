@@ -8,6 +8,8 @@ import org.dtree.fhir.core.config.ProjectConfigManager
 import org.dtree.fhir.core.di.FhirProvider
 import org.dtree.fhir.core.utils.readFile
 import org.eclipse.jgit.api.Git
+import org.eclipse.jgit.api.TransportConfigCallback
+import org.eclipse.jgit.transport.TransportHttp
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider
 import org.hl7.fhir.r4.model.Questionnaire
 import org.hl7.fhir.r4.model.StructureMap
@@ -33,10 +35,17 @@ class LocalResourceFetcher(private val dotEnv: Dotenv, private val iParser: IPar
     private val cacheExpiryHours: Long = 24
     private var projectConfig: ProjectConfig = ProjectConfig()
     private val credentialsProvider: UsernamePasswordCredentialsProvider
+    private val transportConfigCallback: TransportConfigCallback
 
     init {
         Files.createDirectories(baseDir)
         credentialsProvider = UsernamePasswordCredentialsProvider(dotEnv["RESOURCES_GIT_KEY"], "")
+        transportConfigCallback = TransportConfigCallback { transport ->
+            if (transport is TransportHttp) {
+                transport.additionalHeaders =
+                    mapOf(Pair("Authorization", "Bearer ${dotEnv["RESOURCES_GIT_KEY"]}"))
+            }
+        }
     }
 
     private fun repoPath(): Path {
@@ -75,7 +84,11 @@ class LocalResourceFetcher(private val dotEnv: Dotenv, private val iParser: IPar
     private fun updateExistingRepo(repoDir: File) {
         try {
             Git.open(repoDir).use { git ->
-                git.pull().setCredentialsProvider(credentialsProvider).call()
+                val call = git.pull()
+                    .setCredentialsProvider(credentialsProvider)
+                    .setTransportConfigCallback(transportConfigCallback)
+                    .call()
+                call
             }
         } catch (e: Exception) {
             throw GitHubRepoCacheException("Failed to update repository", e)
@@ -90,6 +103,7 @@ class LocalResourceFetcher(private val dotEnv: Dotenv, private val iParser: IPar
                 .setBranch(dotEnv["RESOURCES_CACHE_TAG"] ?: "production")
                 .setDirectory(repoDir)
                 .setCredentialsProvider(credentialsProvider)
+                .setTransportConfigCallback(transportConfigCallback)
                 .call()
                 .close()
         } catch (e: Exception) {

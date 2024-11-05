@@ -8,15 +8,9 @@ import org.dtree.fhir.core.config.ProjectConfigManager
 import org.dtree.fhir.core.di.FhirProvider
 import org.dtree.fhir.core.utils.readFile
 import org.eclipse.jgit.api.Git
-import org.eclipse.jgit.transport.CredentialsProvider
-import org.eclipse.jgit.transport.SshSessionFactory
-import org.eclipse.jgit.transport.URIish
-import org.eclipse.jgit.transport.sshd.IdentityPasswordProvider
-import org.eclipse.jgit.transport.sshd.SshdSessionFactoryBuilder
-import org.eclipse.jgit.util.FS
+import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider
 import org.hl7.fhir.r4.model.Questionnaire
 import org.hl7.fhir.r4.model.StructureMap
-import org.koin.core.component.inject
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.Path
@@ -38,24 +32,11 @@ class LocalResourceFetcher(private val dotEnv: Dotenv, private val iParser: IPar
     private val baseDir: Path = Path.of(dotEnv["RESOURCES_CACHE_DIR"] ?: "repo-cache")
     private val cacheExpiryHours: Long = 24
     private var projectConfig: ProjectConfig = ProjectConfig()
+    private val credentialsProvider: UsernamePasswordCredentialsProvider
 
     init {
         Files.createDirectories(baseDir)
-        val sshDir =
-            if (!dotEnv["RESOURCES_SSH_LOCATION"].isNullOrEmpty()) File(dotEnv["RESOURCES_SSH_LOCATION"]) else File(
-                FS.DETECTED.userHome(),
-                "/.ssh"
-            )
-        val sshSessionFactory = SshdSessionFactoryBuilder().setPreferredAuthentications("publickey")
-            .setHomeDirectory(FS.DETECTED.userHome()).setSshDirectory(sshDir)
-            .setKeyPasswordProvider { cp: CredentialsProvider? ->
-                object : IdentityPasswordProvider(cp) {
-                    override fun getPassword(uri: URIish, message: String): CharArray {
-                        return dotEnv["RESOURCES_SSH_PASSPHRASE"].toCharArray()
-                    }
-                }
-            }.build(null)
-        SshSessionFactory.setInstance(sshSessionFactory)
+        credentialsProvider = UsernamePasswordCredentialsProvider(dotEnv["RESOURCES_GIT_KEY"], "")
     }
 
     private fun repoPath(): Path {
@@ -94,7 +75,7 @@ class LocalResourceFetcher(private val dotEnv: Dotenv, private val iParser: IPar
     private fun updateExistingRepo(repoDir: File) {
         try {
             Git.open(repoDir).use { git ->
-                git.pull().call()
+                git.pull().setCredentialsProvider(credentialsProvider).call()
             }
         } catch (e: Exception) {
             throw GitHubRepoCacheException("Failed to update repository", e)
@@ -108,6 +89,7 @@ class LocalResourceFetcher(private val dotEnv: Dotenv, private val iParser: IPar
                 .setDepth(1)
                 .setBranch(dotEnv["RESOURCES_CACHE_TAG"] ?: "production")
                 .setDirectory(repoDir)
+                .setCredentialsProvider(credentialsProvider)
                 .call()
                 .close()
         } catch (e: Exception) {
@@ -128,14 +110,11 @@ class LocalResourceFetcher(private val dotEnv: Dotenv, private val iParser: IPar
     }
 
     override fun fetchStructureMap(id: String): StructureMap {
-      val res =  ParseJsonCommands().parseStructureMap(
+        return ParseJsonCommands().parseStructureMap(
             repoPath().resolve(id).pathString,
             fhirProvider.parser,
             fhirProvider.scu(), projectConfig
-        )
-        if (res == null) throw  Exception("Failed to fetch StructureMap")
-
-        return  res
+        ) ?: throw Exception("Failed to fetch StructureMap")
     }
 
     override fun getResponseTemplate(s: String): String {

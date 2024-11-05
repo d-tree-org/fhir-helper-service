@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   fhir-service:
-    image: ghcr.io/d-tree-org/fhir-helper-service:v0.0.3
+    image: ${DC_IMAGE:-ghcr.io/d-tree-org/fhir-helper-service:v0.0.3}
     ports:
       - ${PORT}:4040
     environment:
@@ -15,5 +15,11 @@ services:
       - KEYCLOAK_USERNAME:${KEYCLOAK_USERNAME}
       - KEYCLOAK_PASSWORD:${KEYCLOAK_PASSWORD}
       - FHIR_BASE_URL:${FHIR_BASE_URL}
+      - RESOURCES_CACHE_DIR=${RESOURCES_CACHE_DIR}
+      - RESOURCES_CACHE_TAG=${RESOURCES_CACHE_TAG}
+      - RESOURCES_CACHE_URL=${RESOURCES_CACHE_URL}
+      - RESOURCES_SSH_PASSPHRASE=${RESOURCES_SSH_PASSPHRASE}
+      - RESOURCES_SSH_LOCATION=${RESOURCES_SSH_LOCATION}
+      - RESOURCES_GIT_KEY=${RESOURCES_GIT_KEY}
     volumes:
       - fhir_data:/data

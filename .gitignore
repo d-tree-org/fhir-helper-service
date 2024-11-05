@@ -46,3 +46,4 @@ bin/
 .kotlin/
 
 .temp/
+fhir_data/

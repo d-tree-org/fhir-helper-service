@@ -1,0 +1,10 @@
+version: '3.8'
+
+services:
+  fhir-service:
+    image: fhir-helper-service:local
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ./fhir_data:/data

@@ -15,4 +15,6 @@ class Tasks() {
         @Resource("tracing-entered-error")
         class TracingEnteredError(val parent: Fixes = Fixes())
     }
+    @Resource("util")
+    class Utils(val parent: Tasks = Tasks()) {}
 }

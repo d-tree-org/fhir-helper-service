@@ -46,7 +46,6 @@ object FormService : KoinComponent {
             if (patientData.isEmpty()) continue
             var questionnaireResponse = responseGenerator.generateQuestionerResponse(questionnaire, patientData)
 
-
             if (patientData.currentCarePlan?.period?.end != null && DateUtils.isSameDay(
                     patientData.currentCarePlan?.period?.end,
                     entry.date
@@ -72,6 +71,7 @@ object FormService : KoinComponent {
             questionnaireResponse = responseUpdater.getQuestionnaireResponse()
             println(iParser.encodeResourceToString(questionnaireResponse))
             val bundle = responseGenerator.extractBundle(questionnaire, questionnaireResponse, structureMap)
+            println(iParser.encodeResourceToString(bundle))
             val bundleResources = bundle.entry.map {
                 val resource = it.resource
                 if (resource is Appointment) {
@@ -89,7 +89,6 @@ object FormService : KoinComponent {
             entriesToSave.add(questionnaireResponse.createBundleComponent())
             entriesToSave.addAll(PatchMaker.createPatchedRequest(iParser, patientData.getAllItemMap(), bundleResources))
         }
-
         saveResources(entriesToSave)
     }
 

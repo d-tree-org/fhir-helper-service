@@ -12,15 +12,17 @@ import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Response
 import okhttp3.logging.HttpLoggingInterceptor
+import org.apache.commons.net.ntp.TimeStamp
 import org.dtree.fhir.core.models.PatientData
 import org.dtree.fhir.core.models.parsePatientResources
 import org.dtree.fhir.core.utils.Logger
+import org.dtree.fhir.core.utils.createFile
 import org.dtree.fhir.core.utils.logicalId
 import org.hl7.fhir.instance.model.api.IBaseBundle
 import org.hl7.fhir.instance.model.api.IBaseResource
 import org.hl7.fhir.r4.model.*
 import java.util.concurrent.TimeUnit
-
+import kotlin.io.path.Path
 
 class FhirClient(private val dotenv: Dotenv, private val iParser: IParser) {
     val fhirClient: IGenericClient
@@ -225,7 +227,8 @@ class FhirClient(private val dotenv: Dotenv, private val iParser: IParser) {
             if (response is DataResponseState.Success) {
                 Logger.info("Uploaded successfully")
             } else if (response is DataResponseState.Error) {
-                throw Exception(response.exception)
+                saveRemainingData(list.subList(start, list.size - 1))
+                throw FailedToUploadException(response.exception.toString())
             }
         }
     }
@@ -270,6 +273,7 @@ class FhirClient(private val dotenv: Dotenv, private val iParser: IParser) {
                 DataResponseState.Success(true)
             } catch (e: Exception) {
                 Logger.error("Failed to upload batch: ${e.message}")
+                Logger.info(iParser.encodeResourceToString(bundle))
                 DataResponseState.Error(e)
             }
         }
@@ -277,6 +281,19 @@ class FhirClient(private val dotenv: Dotenv, private val iParser: IParser) {
 
     private fun exceptionFromResponse(response: Response): Exception {
         return Exception("Status: ${response.code},message: ${response.message}, body: ${response.body?.string()} ")
+    }
+
+    private fun saveRemainingData(subList: List<Bundle.BundleEntryComponent>) {
+        dotenv["REPORT_DIR"]?.apply {
+            val time = TimeStamp.getCurrentTime()
+            val bundle = Bundle()
+            subList.forEach {
+                bundle.entry.add(it)
+            }
+            iParser.encodeResourceToString(bundle)
+                .createFile(Path(this).resolve("batch-upload-${time.time}.json").toString())
+        }
+
     }
 }
 
@@ -293,3 +310,5 @@ fun <T : IBaseResource> IQuery<Bundle>.paginateExecute(client: FhirClient): List
 
     return list.toList() as List<T>
 }
+
+class FailedToUploadException(message: String) : Exception(message) {}

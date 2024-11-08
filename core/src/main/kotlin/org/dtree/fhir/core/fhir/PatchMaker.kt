@@ -8,8 +8,8 @@ import com.google.android.fhir.LocalChange
 import com.google.android.fhir.LocalChangeToken
 import org.dtree.fhir.core.utils.logicalId
 import org.hl7.fhir.r4.model.Bundle.BundleEntryComponent
-import org.json.JSONArray
 import org.hl7.fhir.r4.model.Resource
+import org.json.JSONArray
 import java.time.Instant
 
 object PatchMaker {
@@ -19,10 +19,11 @@ object PatchMaker {
         resources: List<Resource>
     ): List<BundleEntryComponent> {
         return resources.mapNotNull { resource ->
-            val oldResource = resourceMap[resource.logicalId]
+            val resourceID = resource.logicalId
+            val oldResource = resourceMap[resourceID]
                 ?: return@mapNotNull LocalChange(
                     resourceType = resource.fhirType(),
-                    resourceId = resource.logicalId,
+                    resourceId = resourceID,
                     versionId = resource.meta.versionId,
                     timestamp = Instant.now(),
                     type = LocalChange.Type.INSERT,
@@ -42,7 +43,7 @@ object PatchMaker {
             } else {
                 LocalChange(
                     resourceType = resource.fhirType(),
-                    resourceId = resource.logicalId,
+                    resourceId = resourceID,
                     versionId = resource.meta.versionId,
                     timestamp = Instant.now(),
                     type = LocalChange.Type.UPDATE,

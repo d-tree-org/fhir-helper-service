@@ -75,7 +75,7 @@ object FormService : KoinComponent {
             val bundleResources = bundle.entry.map {
                 val resource = it.resource
                 if (resource is Appointment) {
-                    val idx = resource.participant.indexOfFirst { it.actor.reference.contains("Practitioner/Practitioner/")  }
+                    val idx = resource.participant.indexOfFirst { it.actor?.reference?.contains("Practitioner/Practitioner/") == true  }
                     if (idx != -1) {
                         resource.participant[idx] = resource.participant[idx].apply {
                             actor.reference = actor.reference.replace("Practitioner/Practitioner/", "Practitioner/")

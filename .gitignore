@@ -42,3 +42,8 @@ bin/
 .DS_Store
 
 *.env
+
+.kotlin/
+
+.temp/
+fhir_data/

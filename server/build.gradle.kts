@@ -62,6 +62,11 @@ dependencies {
     implementation(libs.hapi.fhir.caching.guava)
     implementation(libs.hapi.fhir.client.okhttp)
 
+    implementation(libs.spullara.mustache)
+
     testImplementation(libs.ktor.server.test.host)
     testImplementation(libs.kotlin.test.junit)
+
+    implementation("org.eclipse.jgit:org.eclipse.jgit:7.0.0.202409031743-r")
+    implementation("org.eclipse.jgit:org.eclipse.jgit.ssh.apache:7.0.0.202409031743-r")
 }

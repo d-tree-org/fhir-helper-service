@@ -77,7 +77,7 @@ fun filterAddCount(count: Int) = FilterFormItem(
     )
 )
 
-fun filterRevInclude() = FilterFormItem(
+fun filterRevInclude(custom: String? = null) = FilterFormItem(
     filterId = "_include",
     template = "_include={value}",
     filterType = FilterTemplateType.template,
@@ -85,7 +85,7 @@ fun filterRevInclude() = FilterFormItem(
         FilterFormParamData(
             name = "value",
             type = FilterParamType.string,
-            value = "Appointment:patient"
+            value = custom ?: "Appointment:patient"
         )
     )
 )

@@ -3,10 +3,10 @@ package org.dtree.fhir.core.utils
 import ca.uhn.fhir.context.FhirContext
 import ca.uhn.fhir.context.FhirVersionEnum
 import ca.uhn.fhir.parser.IParser
+import com.google.android.fhir.LocalChange
 import org.dtree.fhir.core.structureMaps.createStructureMapFromFile
-import org.dtree.fhir.core.utils.CoreResponse
-import org.dtree.fhir.core.utils.readFile
 import org.hl7.fhir.r4.model.*
+import org.hl7.fhir.r4.model.Bundle.BundleEntryComponent
 import org.hl7.fhir.r4.utils.StructureMapUtilities
 
 fun formatStructureMap(path: String, srcName: String?): CoreResponse<String> {
@@ -29,20 +29,30 @@ fun Reference.extractId(): String =
         ""
     } else this.reference.substringAfterLast(delimiter = '/', missingDelimiterValue = "")
 
+fun String.asReference(resourceType: ResourceType): Reference {
+    val resourceId = this
+    return Reference().apply { reference = "${resourceType.name}/$resourceId" }
+}
+
+fun Resource.asReference(): Reference {
+    val resourceId = this
+    return Reference().apply { reference = "${resourceType.name}/$logicalId" }
+}
+
 
 val Resource.logicalId: String
     get() {
-        return this.idElement?.idPart.orEmpty()
+        return this.idElement?.idPart?.replace("#", "").orEmpty()
     }
 
 fun CarePlan.isCompleted(): Boolean {
     val tasks = fetchCarePlanActivities(this)
-    return tasks.isNotEmpty() &&  tasks.all { it.detail.status == CarePlan.CarePlanActivityStatus.COMPLETED }
+    return tasks.isNotEmpty() && tasks.all { it.detail.status == CarePlan.CarePlanActivityStatus.COMPLETED }
 }
 
 fun CarePlan.isStarted(): Boolean {
     val statuses = listOf(CarePlan.CarePlanActivityStatus.CANCELLED, CarePlan.CarePlanActivityStatus.COMPLETED)
-   return this.activity.firstOrNull {  statuses.contains(it.detail.status) } != null
+    return this.activity.firstOrNull { statuses.contains(it.detail.status) } != null
 }
 
 fun CarePlan.CarePlanActivityComponent.shouldShowOnProfile(): Boolean {
@@ -71,4 +81,19 @@ private fun fetchCarePlanActivities(
     return activityOnList.values.sortedWith(
         compareBy(nullsLast()) { it.detail?.code?.text?.toBigIntegerOrNull() },
     )
+}
+
+fun Resource.createBundleComponent(): BundleEntryComponent {
+    return BundleEntryComponent().apply {
+        resource = this@createBundleComponent
+        request = Bundle.BundleEntryRequestComponent().apply {
+            if (this@createBundleComponent.hasId()) {
+                method = Bundle.HTTPVerb.PUT
+                url = "${this@createBundleComponent.resourceType.name}/${this@createBundleComponent.logicalId}"
+            } else {
+                method = Bundle.HTTPVerb.POST
+                url = this@createBundleComponent.resourceType.name
+            }
+        }
+    }
 }

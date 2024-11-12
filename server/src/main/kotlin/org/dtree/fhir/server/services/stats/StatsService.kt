@@ -1,9 +1,12 @@
 package org.dtree.fhir.server.services.stats
 
 import org.dtree.fhir.core.uploader.general.FhirClient
+import org.dtree.fhir.server.core.models.FilterFormData
 import org.dtree.fhir.server.core.search.filters.*
 import org.dtree.fhir.server.services.PatientType
 import org.dtree.fhir.server.services.fetchDataTest
+import org.hl7.fhir.r4.model.ResourceType
+import org.hl7.fhir.r4.model.Task
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import java.time.LocalDate
@@ -139,12 +142,25 @@ object StatsService : KoinComponent {
                 title = "Viral Load Collected"
             )
 
+
+        val tracingFilters = FilterFormData(
+            resource = ResourceType.Task.name,
+            filterId = "tracing_filter",
+            groupId = "tracing",
+            title = "Tracing",
+            filters = listOf(filterAddCount(2000000)) + tracingFiltersByFacility(id),
+            customParser = { bundle ->
+                val results = bundle.entry.associateBy { (it.resource as Task).`for`.reference }
+                results.size
+            }
+        )
+
         return fetchDataTest(
             client, listOf(
                 newlyDiagnosed, alreadyOnArt, exposedInfants,
                 newExposedInfants, newNewlyDiagnosed, newAlreadyOnArt,
                 allVisits, allVisitsExposed, allVisitsNewly, allVisitsArt,
-                milestone, viralLoad
+                milestone, viralLoad, tracingFilters
             )
         )
     }

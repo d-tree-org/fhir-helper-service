@@ -11,6 +11,14 @@ class Tracing() {
         class Id(val parent: Facility = Facility(), val id: String = "") {
             @Resource("appointments")
             class List(val parent: Id = Facility.Id(), val date: String? = "")
+
+            @Resource("all")
+            class All(val parent: Id = Facility.Id(), val date: String? = "")
+
+            @Resource("clean-future-date")
+            class CleanFutureDate(val parent: Id = Facility.Id())
         }
     }
+    @Resource("entered-in-error")
+    class EnteredInError(val parent: Tracing = Tracing()) {}
 }

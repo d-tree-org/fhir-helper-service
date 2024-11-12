@@ -1,13 +1,20 @@
 package org.dtree.fhir.server.services.tracing
 
+import ca.uhn.fhir.rest.gclient.TokenClientParam
 import org.dtree.fhir.core.uploader.general.FhirClient
+import org.dtree.fhir.core.uploader.general.paginateExecute
+import org.dtree.fhir.core.utilities.ReasonConstants
+import org.dtree.fhir.core.utilities.SystemConstants
+import org.dtree.fhir.core.utils.extractOfficialIdentifier
 import org.dtree.fhir.core.utils.logicalId
 import org.dtree.fhir.server.core.models.FilterFormData
 import org.dtree.fhir.server.core.models.FilterTemplateType
-import org.dtree.fhir.server.core.search.filters.*
+import org.dtree.fhir.server.core.search.filters.PredefinedFilters
+import org.dtree.fhir.server.core.search.filters.filterAddCount
+import org.dtree.fhir.server.core.search.filters.filterRevInclude
+import org.dtree.fhir.server.core.search.filters.tracingFiltersByFacility
 import org.dtree.fhir.server.services.QueryParam
 import org.dtree.fhir.server.services.createFilter
-import org.dtree.fhir.server.util.extractOfficialIdentifier
 import org.hl7.fhir.r4.model.*
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
@@ -16,24 +23,128 @@ import java.time.ZoneId
 
 object TracingService : KoinComponent {
     private val client by inject<FhirClient>()
+
+
     fun getStats(id: String): TracingStatsResults {
-        TODO("Not yet implemented")
+        return TracingStatsResults(getTracingList(id, LocalDate.now()).results.size)
     }
 
-    fun getAppointmentList(facilityId: String, date: LocalDate): AppointmentListResults {
-        val dateFilter = filterByDate(date)
-        val locationFilter = filterByLocation(facilityId)
+    fun getTracingList(facilityId: String, date: LocalDate): TracingListResults {
         val filter = FilterFormData(
-            resource = ResourceType.Appointment.name,
+            resource = ResourceType.Task.name,
             filterId = "random_filter",
-            filters = listOf(dateFilter, filterAddCount(20000), filterRevInclude(), locationFilter)
+            filters = listOf(
+                filterAddCount(20000),
+                filterRevInclude("Task:patient"),
+            ) + tracingFiltersByFacility(facilityId)
         )
 
-        return fetch(client, listOf(filter))
+        val results = fetch(client, listOf(filter))
+        val map = mutableMapOf<String, Temp>()
+        results.forEach { result ->
+            val patient = result.include as Patient
+            if (map.contains(patient.logicalId)) {
+                val item = map[patient.logicalId]!!
+                map[patient.logicalId] = (item.copy(tasks = item.tasks + listOf(result.main as Task)))
+            } else {
+                map[patient.logicalId] = Temp(listOf(result.main as Task), patient)
+            }
+        }
+        val allPatientsToFetch = map.keys
+        val appointmentMap = mutableMapOf<String, Appointment>()
+        val appointmentBundle = client.fetchResourcesFromList(allPatientsToFetch.toList())
+        appointmentBundle.entry.forEach { entry ->
+            val appointment = entry.resource as Appointment
+            if (appointment.hasStart() && appointment.hasParticipant() && (appointment.status == Appointment.AppointmentStatus.BOOKED ||
+                        appointment.status == Appointment.AppointmentStatus.WAITLIST ||
+                        appointment.status == Appointment.AppointmentStatus.NOSHOW)
+            ) {
+                val patient =
+                    appointment.participant.first { it.actor.reference.contains("Patient") }.actor.reference.split("/")
+                        .last()
+                appointmentMap[patient] = appointment
+            }
+        }
+        return TracingListResults(map.map { entry ->
+            val mPatient = entry.value.patient
+            val type = mutableSetOf<String>()
+            var mDate: LocalDate? = null
+            val reasons = entry.value.tasks.map { task ->
+                println(task.logicalId)
+                task.meta.tag.firstOrNull { tag -> tag.system == "https://d-tree.org/fhir/contact-tracing" }?.code?.let {
+                    type.add(it)
+                }
+                mDate = task.authoredOn?.toInstant()?.atZone(ZoneId.systemDefault())?.toLocalDate()
+                task.reasonCode.text
+            }
+            val appointmentDate = appointmentMap[mPatient.logicalId]?.start?.toInstant()?.atZone(ZoneId.systemDefault())
+                ?.toLocalDate()
+            val patientTypes =
+                mPatient.meta.tag
+                    .filter { it.system == SystemConstants.PATIENT_TYPE_FILTER_TAG_VIA_META_CODINGS_SYSTEM }
+                    .map { it.code }
+            val patientType: String = SystemConstants.getCodeByPriority(patientTypes) ?: patientTypes.first()
+            TracingResult(
+                uuid = mPatient.logicalId,
+                id = mPatient.extractOfficialIdentifier(),
+                name = mPatient.nameFirstRep.nameAsSingleString,
+                dateAdded = mDate,
+                type = type.toList(),
+                patientType = patientType,
+                reasons = reasons,
+                nextAppointment = appointmentDate,
+                isFutureAppointment = appointmentDate?.isAfter(LocalDate.now())
+            )
+        }.distinctBy { it.uuid })
+    }
+
+    suspend fun setTracingEnteredInError(patientId: List<String>) {
+        val tasks: List<Task> = client.fhirClient.search<Bundle>().forResource(Task::class.java)
+            .where(Task.PATIENT.hasAnyOfIds(*patientId.toTypedArray()))
+            .where(
+                TokenClientParam("_tag").exactly()
+                    .codings(ReasonConstants.homeTracingCoding, ReasonConstants.phoneTracingCoding)
+            )
+            .where(
+                Task.STATUS.exactly().codes(
+                    Task.TaskStatus.READY.toCode(),
+                    Task.TaskStatus.INPROGRESS.toCode(),
+                    Task.TaskStatus.REQUESTED.toCode(),
+                    Task.TaskStatus.ACCEPTED.toCode(),
+                    Task.TaskStatus.ONHOLD.toCode()
+                )
+            )
+            .paginateExecute<Task>(client).mapNotNull { task ->
+                if (task.status == Task.TaskStatus.COMPLETED || task.status == Task.TaskStatus.CANCELLED || task.status == Task.TaskStatus.ENTEREDINERROR) {
+                    return@mapNotNull null
+                }
+                task.meta.addTag(
+                    ReasonConstants.resourceEnteredInError
+                )
+                task.status = Task.TaskStatus.ENTEREDINERROR
+                task
+            }
+        println("Tasks entered in error ${tasks.size}")
+        if (tasks.isEmpty()) {
+            println("No Tracing tasks")
+            return
+        }
+        client.bundleUpload(tasks, 30)
+    }
+
+    suspend fun cleanFutureDateMissedAppointment(facilityId: String) {
+        val results = getTracingList(facilityId, LocalDate.now()).results.mapNotNull {
+            if(it.isFutureAppointment == true) it.uuid
+            else null
+        }
+        if (results.isEmpty()) return
+        setTracingEnteredInError(results)
     }
 }
 
-fun fetch(client: FhirClient, actions: List<FilterFormData>): AppointmentListResults {
+data class Temp(val tasks: List<Task>, val patient: Patient)
+
+fun fetch(client: FhirClient, actions: List<FilterFormData>): MutableList<ResultClass> {
     val requests = mutableListOf<Bundle.BundleEntryRequestComponent>()
     val results = mutableListOf<ResultClass>()
     for (data in actions) {
@@ -67,12 +178,7 @@ fun fetch(client: FhirClient, actions: List<FilterFormData>): AppointmentListRes
             results.addAll(handleIncludes(resource))
         }
     }
-    return AppointmentListResults(results.map {
-        var patient = (it.include as Patient)
-        val appointment = it.main as Appointment
-        val date = appointment.start?.toInstant()?.atZone(ZoneId.systemDefault())?.toLocalDate()
-        Stuff(patient.nameFirstRep.nameAsSingleString, patient.extractOfficialIdentifier(), date)
-    })
+    return results
 }
 
 fun handleIncludes(bundle: Bundle): List<ResultClass> {
@@ -93,12 +199,13 @@ fun handleIncludes(bundle: Bundle): List<ResultClass> {
                     resource.participant.first { it.actor.reference.contains("Patient") }.actor.reference.split("/")
                         .last()
                 includes[patient] = resource.logicalId
+            } else if (resource is Task) {
+                val patient = resource.`for`.reference.split("/").last()
+                includes[patient] = resource.logicalId
             }
         }
     }
     return final
 }
-
-data class Stuff(val name: String, val id: String?, val date: LocalDate?)
 
 data class ResultClass(val main: Resource, val include: Resource)

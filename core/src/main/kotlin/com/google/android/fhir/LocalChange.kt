@@ -38,9 +38,17 @@ data class LocalChange(
         }
     }
 
-    fun createPatchRequest(iParser: IParser, resource: Resource? = null): BundleEntryComponent {
+    fun createPatchRequest(
+        iParser: IParser,
+        resource: Resource? = null,
+        isPatch: Boolean = true
+    ): BundleEntryComponent {
         return if (type == LocalChange.Type.UPDATE) {
-            createRequest(createPathRequest())
+            if (isPatch) {
+                createRequest(createPathRequest())
+            } else {
+                createRequest(iParser.parseResource(payload) as Resource)
+            }
         } else if (resource != null && type == LocalChange.Type.INSERT) {
             createRequest(resource)
         } else {

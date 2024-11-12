@@ -1,6 +1,7 @@
 package org.dtree.fhir.server.controller
 
 import org.dtree.fhir.server.plugins.tasks.ChangeAppointmentData
+import org.dtree.fhir.server.plugins.tasks.ChangeStatusType
 import org.dtree.fhir.server.plugins.tasks.FinishVisitRequest
 import org.dtree.fhir.server.plugins.tasks.TracingRemovalType
 import org.dtree.fhir.server.services.form.FormService
@@ -20,6 +21,10 @@ class TasksControllerImpl : TasksController, BaseController(), KoinComponent {
         formService.changeAppointmentData(changeAppointmentDataList)
     }
 
+    override suspend fun changeStatus(patients: List<String>, type: ChangeStatusType) {
+        formService.changeStatus(patients, type)
+    }
+
     override suspend fun tracingEnteredInError(patients: List<String>, type: TracingRemovalType) {
         formService.tracingEnteredInError(patients, type)
     }
@@ -34,4 +39,5 @@ interface TasksController {
     suspend fun changeAppointmentData(changeAppointmentDataList: List<ChangeAppointmentData>)
     suspend fun tracingEnteredInError(patients: List<String>, type: TracingRemovalType)
     suspend fun runUtil()
+    suspend fun changeStatus(patients: List<String>, type: ChangeStatusType)
 }

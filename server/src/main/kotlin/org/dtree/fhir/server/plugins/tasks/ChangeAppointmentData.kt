@@ -12,8 +12,19 @@ data class TracingEnteredErrorData(
     val data: List<String>,
 )
 
+data class ChangeStatusData(
+    val type: ChangeStatusType,
+    val data: List<String>,
+)
+
 enum class TracingRemovalType {
     EnteredInError,
     TransferredOut,
     Deceased
+}
+
+enum class ChangeStatusType {
+    Discharged,
+    Deceased,
+    EnteredInError
 }

@@ -161,6 +161,7 @@ fun Bundle.parsePatientResources(patientId: String): Pair<List<String>, PatientD
         tasks = tasks.values.toMutableList(),
         tracingTasks = tracingTasks,
         carePlans = activeCarePlans,
+        currentCarePlan = currentCarePlan,
         oldCarePlans = allCarePlans.filter { it.status != CarePlan.CarePlanStatus.ACTIVE && it.status != CarePlan.CarePlanStatus.ONHOLD }
             .toMutableList(),
     ))

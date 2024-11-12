@@ -26,6 +26,7 @@ data class LocalChange(
      * [LocalChange] class instance is created.
      */
     var token: LocalChangeToken,
+    val isPatch: Boolean = false,
 ) {
     enum class Type(val value: Int) {
         INSERT(1), // create a new resource. payload is the entire resource json.
@@ -40,8 +41,7 @@ data class LocalChange(
 
     fun createPatchRequest(
         iParser: IParser,
-        resource: Resource? = null,
-        isPatch: Boolean = true
+        resource: Resource? = null
     ): BundleEntryComponent {
         return if (type == LocalChange.Type.UPDATE) {
             if (isPatch) {

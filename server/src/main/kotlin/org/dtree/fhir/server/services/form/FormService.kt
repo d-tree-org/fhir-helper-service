@@ -57,7 +57,7 @@ object FormService : KoinComponent {
             val exposedDischarge =
                 type == ChangeStatusType.Discharged && patientData.patient.category == "exposed-infant"
             if (exposedDischarge) {
-                questionnaire = questionnaireMilestone
+                questionnaire = questionnaireMilestone.copy()
                 structureMap = structureMapMilestone
             } else {
                 questionnaire = statusQuestionnaire.copy()

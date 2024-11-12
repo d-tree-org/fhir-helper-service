@@ -4,22 +4,25 @@ import ca.uhn.fhir.parser.IParser
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.fge.jsonpatch.diff.JsonDiff
-import com.github.fge.jsonpatch.mergepatch.JsonMergePatch
 import com.google.android.fhir.LocalChange
 import com.google.android.fhir.LocalChangeToken
+import com.google.android.fhir.sync.upload.patch.PatchOrdering.sccOrderByReferences
 import org.dtree.fhir.core.utils.logicalId
 import org.hl7.fhir.r4.model.Bundle.BundleEntryComponent
 import org.hl7.fhir.r4.model.Resource
 import org.json.JSONArray
 import java.time.Instant
+import java.util.UUID
+import kotlin.random.Random
 
 object PatchMaker {
+    private val resourceHelper = FhirResourceHelper()
     fun createPatchedRequest(
         iParser: IParser,
         resourceMap: Map<String, Resource>,
         resources: List<Resource>
     ): List<BundleEntryComponent> {
-        return resources.mapNotNull { resource ->
+        val changes = resources.mapNotNull { resource ->
             val resourceID = resource.logicalId
             var oldResource = resourceMap[resourceID]
             if (oldResource == null) {
@@ -34,8 +37,8 @@ object PatchMaker {
                 payload = iParser.encodeResourceToString(resource.apply {
                     id = logicalId
                 }),
-                token = LocalChangeToken(listOf())
-            ).createPatchRequest(iParser, resource)
+                token = LocalChangeToken(listOf(Random.nextLong())),
+            )
 
             val jsonDiff = patch(iParser, oldResource.apply {
                 id = logicalId
@@ -52,10 +55,22 @@ object PatchMaker {
                     timestamp = Instant.now(),
                     type = LocalChange.Type.UPDATE,
                     payload = jsonDiff.second,
-                    token = LocalChangeToken(listOf())
-                ).createPatchRequest(iParser, isPatch = jsonDiff.first)
+                    token = LocalChangeToken(listOf(Random.nextLong())),
+                    isPatch = jsonDiff.first
+                )
             }
         }
+        val refs = changes.flatMap {
+            val resource: Resource = if (it.isPatch) {
+                resourceMap[it.resourceId]!!
+            } else {
+                iParser.parseResource(it.payload) as Resource
+            }
+            resourceHelper.extractLocalChangeWithRefs(it, resource)
+        }
+        val ordered = refs.sccOrderByReferences()
+        val newLocalChanges = ordered.flatMap { it.patchMappings.map { it.localChange } }
+        return newLocalChanges.map { it.createPatchRequest(iParser) }
     }
 
     private fun patch(parser: IParser, source: Resource, target: Resource): Pair<Boolean, String>? {
@@ -74,15 +89,7 @@ object PatchMaker {
             println("New resource same as last one")
             return null
         }
-//        if (response.second) {
-//            var resultData = sourceStr
-//            for (index in 0..<response.first.length()) {
-//                val patch =
-//                    objectMapper.readValue(response.first.optJSONObject(index).toString(), JsonMergePatch::class.java)
-//                resultData = patch.apply(resultData)
-//            }
-//            return Pair(false, resultData.toString())
-//        }
+
         return Pair(true, jsonDiff.toString())
     }
 

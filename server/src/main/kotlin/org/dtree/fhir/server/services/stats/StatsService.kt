@@ -142,25 +142,12 @@ object StatsService : KoinComponent {
                 title = "Viral Load Collected"
             )
 
-
-        val tracingFilters = FilterFormData(
-            resource = ResourceType.Task.name,
-            filterId = "tracing_filter",
-            groupId = "tracing",
-            title = "Tracing",
-            filters = listOf(filterAddCount(2000000)) + tracingFiltersByFacility(id),
-            customParser = { bundle ->
-                val results = bundle.entry.associateBy { (it.resource as Task).`for`.reference }
-                results.size
-            }
-        )
-
         return fetchDataTest(
             client, listOf(
                 newlyDiagnosed, alreadyOnArt, exposedInfants,
                 newExposedInfants, newNewlyDiagnosed, newAlreadyOnArt,
                 allVisits, allVisitsExposed, allVisitsNewly, allVisitsArt,
-                milestone, viralLoad, tracingFilters
+                milestone, viralLoad,
             )
         )
     }

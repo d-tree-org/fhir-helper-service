@@ -17,6 +17,7 @@ import org.dtree.fhir.core.models.PatientData
 import org.dtree.fhir.core.models.parsePatientResources
 import org.dtree.fhir.core.utils.Logger
 import org.dtree.fhir.core.utils.createFile
+import org.dtree.fhir.core.utils.isDev
 import org.dtree.fhir.core.utils.logicalId
 import org.hl7.fhir.instance.model.api.IBaseBundle
 import org.hl7.fhir.instance.model.api.IBaseResource
@@ -41,11 +42,15 @@ class FhirClient(private val dotenv: Dotenv, private val iParser: IParser) {
     private fun createOkHttpClient(): OkHttpClient {
         val tokenAuthenticator = TokenAuthenticator.createAuthenticator(dotenv)
         val authInterceptor = AuthInterceptor(tokenAuthenticator)
-        val logging = HttpLoggingInterceptor()
-        logging.setLevel(HttpLoggingInterceptor.Level.BASIC)
+        val builder = OkHttpClient.Builder()
 
-        return OkHttpClient.Builder()
-            .addInterceptor(logging)
+        if (dotenv.isDev()) {
+            val logging = HttpLoggingInterceptor()
+            logging.setLevel(HttpLoggingInterceptor.Level.BASIC)
+            builder.addInterceptor(logging)
+        }
+
+        return builder
             .addInterceptor(authInterceptor)
             .readTimeout(2, TimeUnit.MINUTES)
             .build()
@@ -196,11 +201,10 @@ class FhirClient(private val dotenv: Dotenv, private val iParser: IParser) {
             .setMethod(Bundle.HTTPVerb.GET)
             .setUrl("List?subject=$patientId&status=current")
 
-        println(iParser.encodeResourceToString(bundle))
         val data = fhirClient.transaction()
             .withBundle(bundle)
-            .prettyPrint()
             .execute().parsePatientResources(patientId)
+
         val patientData = data.second
 
         if (data.first.isNotEmpty()) {

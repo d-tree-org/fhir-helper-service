@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   fhir-service:
-    image: ${DC_IMAGE:-ghcr.io/d-tree-org/fhir-helper-service:v0.0.3}
+    image: ${DC_IMAGE:-ghcr.io/d-tree-org/fhir-helper-service:main}
     ports:
       - ${PORT}:4040
     environment:

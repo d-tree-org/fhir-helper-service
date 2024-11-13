@@ -24,9 +24,33 @@ import java.time.ZoneId
 object TracingService : KoinComponent {
     private val client by inject<FhirClient>()
 
+    fun getStats(facilityId: String): TracingStatsResults {
+        val filter = FilterFormData(
+            resource = ResourceType.Task.name,
+            filterId = "random_filter",
+            filters = listOf(
+                filterAddCount(20000),
+            ) + tracingFiltersByFacility(facilityId)
+        )
 
-    fun getStats(id: String): TracingStatsResults {
-        return TracingStatsResults(getTracingList(id, LocalDate.now()).results.size)
+        val results =
+            fetch(
+                client = client,
+                actions = listOf(filter),
+                hasIncludes = false,
+                encode = true
+            ).associateBy(keySelector = {
+                (it.main as Task).`for`.reference.split("/").last()
+            }, valueTransform = {
+                (it.main as Task).meta.tag.firstOrNull { tag -> tag.system == SystemConstants.CONTACT_TRACING_SYSTEM }?.code
+            }).values.mapNotNull { it }
+        val homeTotal = results.filter { ReasonConstants.homeTracingCoding.code == it }.size
+        val total = results.size
+        return TracingStatsResults(
+            total = total,
+            homeTotal = homeTotal,
+            phoneTotal = total - homeTotal
+        )
     }
 
     fun getTracingList(facilityId: String, date: LocalDate): TracingListResults {
@@ -39,7 +63,7 @@ object TracingService : KoinComponent {
             ) + tracingFiltersByFacility(facilityId)
         )
 
-        val results = fetch(client, listOf(filter))
+        val results = fetch(client = client, actions = listOf(filter), hasIncludes = true, encode = true)
         val map = mutableMapOf<String, Temp>()
         results.forEach { result ->
             val patient = result.include as Patient
@@ -71,7 +95,7 @@ object TracingService : KoinComponent {
             var mDate: LocalDate? = null
             val reasons = entry.value.tasks.map { task ->
                 println(task.logicalId)
-                task.meta.tag.firstOrNull { tag -> tag.system == "https://d-tree.org/fhir/contact-tracing" }?.code?.let {
+                task.meta.tag.firstOrNull { tag -> tag.system == SystemConstants.CONTACT_TRACING_SYSTEM }?.code?.let {
                     type.add(it)
                 }
                 mDate = task.authoredOn?.toInstant()?.atZone(ZoneId.systemDefault())?.toLocalDate()
@@ -134,7 +158,7 @@ object TracingService : KoinComponent {
 
     suspend fun cleanFutureDateMissedAppointment(facilityId: String) {
         val results = getTracingList(facilityId, LocalDate.now()).results.mapNotNull {
-            if(it.isFutureAppointment == true) it.uuid
+            if (it.isFutureAppointment == true) it.uuid
             else null
         }
         if (results.isEmpty()) return
@@ -144,7 +168,12 @@ object TracingService : KoinComponent {
 
 data class Temp(val tasks: List<Task>, val patient: Patient)
 
-fun fetch(client: FhirClient, actions: List<FilterFormData>): MutableList<ResultClass> {
+fun fetch(
+    client: FhirClient,
+    actions: List<FilterFormData>,
+    hasIncludes: Boolean = true,
+    encode: Boolean = false
+): MutableList<ResultClass> {
     val requests = mutableListOf<Bundle.BundleEntryRequestComponent>()
     val results = mutableListOf<ResultClass>()
     for (data in actions) {
@@ -157,7 +186,9 @@ fun fetch(client: FhirClient, actions: List<FilterFormData>): MutableList<Result
             }
         }
         println(filters)
-        val query = QueryParam()
+        val query = QueryParam(
+            encodeUrl = encode
+        )
         for (filter in filters) {
             filter.forEach { query.set(it.first, it.second) }
         }
@@ -170,12 +201,15 @@ fun fetch(client: FhirClient, actions: List<FilterFormData>): MutableList<Result
         })
     }
     val resultBundle: Bundle = client.fetchBundle(requests)
-    resultBundle.entry.forEachIndexed { idx, entry ->
-        val filter = actions[idx]
+    resultBundle.entry.forEachIndexed { _, entry ->
         val resource = entry.resource
         if (resource is Bundle) {
             println(resource.entry.size)
-            results.addAll(handleIncludes(resource))
+            if (hasIncludes) results.addAll(handleIncludes(resource)) else results.addAll(resource.entry.map {
+                ResultClass(
+                    main = it.resource
+                )
+            })
         }
     }
     return results
@@ -208,4 +242,4 @@ fun handleIncludes(bundle: Bundle): List<ResultClass> {
     return final
 }
 
-data class ResultClass(val main: Resource, val include: Resource)
+data class ResultClass(val main: Resource, val include: Resource? = null)

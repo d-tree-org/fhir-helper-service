@@ -3,7 +3,9 @@ package org.dtree.fhir.server.services.tracing
 import java.time.LocalDate
 
 data class TracingStatsResults(
-   val count: Int
+    val total: Int,
+    val homeTotal: Int,
+    val phoneTotal: Int,
 )
 
 data class TracingResult(

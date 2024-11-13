@@ -1,5 +1,7 @@
 package org.dtree.fhir.server.services
 
+import org.dtree.fhir.core.utils.encodeUrl
+
 class QueryParam(
     values: Map<String, String> = mapOf(), private val encodeUrl: Boolean = false
 ) {
@@ -58,9 +60,5 @@ class QueryParam(
             }
         }.joinToString("&")
         return "$resources?$query"
-    }
-
-    private fun String.encodeUrl(): String {
-        return java.net.URLEncoder.encode(this, "UTF-8")
     }
 }

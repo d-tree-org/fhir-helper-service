@@ -7,3 +7,7 @@ fun String.replaceTemplate(values: Map<String, String>): String {
     }
     return string
 }
+
+fun String.encodeUrl(): String {
+    return java.net.URLEncoder.encode(this, "UTF-8")
+}

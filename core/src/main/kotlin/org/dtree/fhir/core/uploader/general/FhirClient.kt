@@ -17,10 +17,12 @@ import org.dtree.fhir.core.models.PatientData
 import org.dtree.fhir.core.models.parsePatientResources
 import org.dtree.fhir.core.utils.Logger
 import org.dtree.fhir.core.utils.createFile
+import org.dtree.fhir.core.utils.encodeUrl
 import org.dtree.fhir.core.utils.logicalId
 import org.hl7.fhir.instance.model.api.IBaseBundle
 import org.hl7.fhir.instance.model.api.IBaseResource
 import org.hl7.fhir.r4.model.*
+import java.net.URI
 import java.util.concurrent.TimeUnit
 import kotlin.io.path.Path
 
@@ -91,6 +93,23 @@ class FhirClient(private val dotenv: Dotenv, private val iParser: IParser) {
     }
 
     fun fetchBundle(list: List<Bundle.BundleEntryRequestComponent>): Bundle {
+        if (list.size == 1) {
+            val resultBundle = Bundle()
+            val path = list.first().url
+            val url = URI.create("${dotenv["FHIR_BASE_URL"]}${if (path.startsWith("/")) path else "/$path"}")
+            var bundle = fhirClient.loadPage().byUrl(url.toString())
+                .andReturnBundle(Bundle::class.java).execute()
+            resultBundle.entry.addAll(bundle.entry)
+            while (bundle.getLink(IBaseBundle.LINK_NEXT) != null) {
+                bundle = fhirClient.loadPage().next(bundle).execute();
+                resultBundle.entry.addAll(bundle.entry)
+            }
+            return Bundle().apply {
+                addEntry(Bundle.BundleEntryComponent().apply {
+                    resource = resultBundle
+                })
+            }
+        }
         val bundle = Bundle()
         bundle.setType(Bundle.BundleType.BATCH)
         bundle.entry.addAll(
@@ -106,26 +125,38 @@ class FhirClient(private val dotenv: Dotenv, private val iParser: IParser) {
     }
 
     fun fetchResourcesFromList(ids: List<String>): Bundle {
-        Appointment.AppointmentStatus.WAITLIST
-        val item = Bundle.BundleEntryRequestComponent().apply {
-            method = Bundle.HTTPVerb.GET
-            url = "Appointment?patient=${ids.joinToString(",")}&status=${
-                listOf(
-                    "waitlist",
-                    "booked",
-                    "noshow"
-                ).joinToString(",")
-            }&_count=20000"
-            id = "filter"
+        val bundle = Bundle()
+
+        ids.chunked(20).forEach { idsToSearch ->
+            val results = fetchResourcesFromList<Appointment>(
+                type = ResourceType.Appointment, ids = idsToSearch, altId = "patient", extras = "&status=${
+                    listOf(
+                        "waitlist",
+                        "booked",
+                        "noshow"
+                    ).joinToString(",").encodeUrl()
+                }&_count=20000"
+            )
+
+            results.forEach { res ->
+                bundle.entry.add(Bundle.BundleEntryComponent().apply {
+                    resource = res
+                })
+            }
         }
-        val bundle = fetchBundle(listOf(item))
-        return bundle.entry.first().resource as Bundle
+
+        return bundle
     }
 
-    fun <T : BaseResource> fetchResourcesFromList(type: ResourceType, ids: List<String>): List<T> {
+    private fun <T : BaseResource> fetchResourcesFromList(
+        type: ResourceType,
+        ids: List<String>,
+        extras: String? = null,
+        altId: String? = null
+    ): List<T> {
         val item = Bundle.BundleEntryRequestComponent().apply {
             method = Bundle.HTTPVerb.GET
-            url = "${type.name}?_id=${ids.joinToString(",")}"
+            url = "${type.name}?${altId ?: "_id"}=${ids.joinToString(",")}${extras}"
             id = "filter"
         }
         val items = mutableListOf<Resource>()
@@ -204,7 +235,7 @@ class FhirClient(private val dotenv: Dotenv, private val iParser: IParser) {
         val patientData = data.second
 
         if (data.first.isNotEmpty()) {
-            val tasks = fetchResourcesFromList<Task>(ResourceType.Task, data.first)
+            val tasks = fetchResourcesFromList<Task>(type = ResourceType.Task, ids = data.first)
             patientData.tasks.addAll(tasks)
         }
 

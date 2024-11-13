@@ -36,6 +36,7 @@ class TracingControllerImpl : TracingController, BaseController(), KoinComponent
             tracingService.cleanFutureDateMissedAppointment(facilityId)
             true
         } catch (e: Exception) {
+            println(e)
             false
         }
     }

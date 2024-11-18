@@ -13,6 +13,7 @@ import org.dtree.fhir.core.utils.Logger
 import org.dtree.fhir.core.utils.readFile
 import io.github.cdimascio.dotenv.Dotenv
 import io.github.cdimascio.dotenv.dotenv
+import org.dtree.fhir.core.di.FhirProvider
 import org.hl7.fhir.r4.context.SimpleWorkerContext
 import org.hl7.fhir.r4.model.Bundle
 import org.hl7.fhir.r4.model.Bundle.BundleEntryComponent
@@ -45,7 +46,7 @@ class FileUploader() {
         val configManager = ProjectConfigManager()
         projectConfig = configManager.loadProjectConfig(projectRoot, directoryPath)
         processExcludedPaths(projectRoot)
-        uploader = FhirClient(dotenv, iParser)
+        uploader = FhirClient(dotenv, FhirProvider())
         fetchFiles(
             directoryPath, mapOf(
                 Pair(projectConfig.structureMapLocation, "map"),

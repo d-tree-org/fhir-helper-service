@@ -20,6 +20,3 @@ data class TracingResult(
     val patientType: String
 )
 
-data class TracingListResults(
-    val results: List<TracingResult>
-)

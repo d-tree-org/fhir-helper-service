@@ -1,12 +1,12 @@
 [versions]
-ktor = "2.3.12" # Set your Ktor version
+ktor = "3.0.0" # Set your Ktor version
 kotlin = "2.0.10" # Set your Kotlin version
-koin = "3.5.6" # Set your Koin version
+koin = "4.0.0" # Set your Koin version
 postgres = "42.5.1" # Set your PostgreSQL driver version
 h2 = "2.2.224" # Set your H2 version
 logback = "1.4.14" # Set your Logback version
 dotenv = "6.4.1" # Set the dotenv version
-swagger-ui = "2.9.0"
+swagger-ui = "4.0.0"
 jquery = "3.2.1"
 hapiFhir = "6.8.0"
 hapiFhirCore = "6.0.22"

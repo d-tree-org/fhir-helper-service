@@ -13,7 +13,7 @@ fun main(args: Array<String>) {
 fun Application.module() {
     val dotEnv = loadEnv()
 
+    configureFrameworks(dotEnv)
     configureSecurity()
     configureRouting()
-    configureFrameworks(dotEnv)
 }

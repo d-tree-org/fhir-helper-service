@@ -17,6 +17,7 @@ import org.dtree.fhir.server.controller.StatsController
 import org.dtree.fhir.server.controller.StatsControllerImpl
 import org.dtree.fhir.server.controller.TracingController
 import org.dtree.fhir.server.controller.TracingControllerImpl
+import org.koin.core.module.dsl.bind
 import org.koin.dsl.module
 
 object ModulesInjection {
@@ -29,15 +30,14 @@ object ModulesInjection {
             fetcher.getRepository()
             fetcher
         }
-        single<StatsController> { StatsControllerImpl() }
-        single<TracingController> { TracingControllerImpl() }
-        single<AppointmentController> { AppointmentControllerImpl() }
-        single<CarePlanController> { CarePlanControllerImpl() }
-        single<TasksController> { TasksControllerImpl() }
-        single<PatientController> { PatientControllerImpl() }
+        singleOf(::StatsControllerImpl) { bind<StatsController>() }
+        singleOf(::TracingControllerImpl) { bind<TracingController>() }
+        singleOf(::AppointmentControllerImpl) { bind<AppointmentController>() }
+        singleOf(::CarePlanControllerImpl) { bind<CarePlanController>() }
+        singleOf(::TasksControllerImpl) { bind<TasksController>() }
+        singleOf(::PatientControllerImpl) { bind<PatientController>() }
 
-        single<FhirClient> { FhirClient(this.get<Dotenv>(), this.get<FhirProvider>().parser) }
-
+        singleOf(::FhirClient)
         singleOf(::ResponseGenerator)
     }
 }

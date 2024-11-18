@@ -13,6 +13,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Response
 import okhttp3.logging.HttpLoggingInterceptor
 import org.apache.commons.net.ntp.TimeStamp
+import org.dtree.fhir.core.di.FhirProvider
 import org.dtree.fhir.core.models.PatientData
 import org.dtree.fhir.core.models.parsePatientResources
 import org.dtree.fhir.core.utils.Logger
@@ -27,10 +28,11 @@ import java.net.URI
 import java.util.concurrent.TimeUnit
 import kotlin.io.path.Path
 
-class FhirClient(private val dotenv: Dotenv, private val iParser: IParser) {
+class FhirClient(private val dotenv: Dotenv, private val provider: FhirProvider) {
     val fhirClient: IGenericClient
     private val okHttpClient: OkHttpClient
     val ctx: FhirContext = FhirContext.forR4()
+    val iParser = provider.parser
 
     init {
         okHttpClient = createOkHttpClient()

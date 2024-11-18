@@ -12,6 +12,7 @@ import org.dtree.fhir.core.utils.*
 import io.github.cdimascio.dotenv.Dotenv
 import io.github.cdimascio.dotenv.dotenv
 import kotlinx.coroutines.runBlocking
+import org.dtree.fhir.core.di.FhirProvider
 import org.dtree.fhir.core.utils.extractId
 import org.dtree.fhir.core.utils.isCompleted
 import org.dtree.fhir.core.utils.isStarted
@@ -42,7 +43,7 @@ class CarePlanFixes {
         dotenv = dotenv {
             directory = projectRoot
         }
-        fhirClient = FhirClient(dotenv, iParser)
+        fhirClient = FhirClient(dotenv, FhirProvider())
     }
 
     fun fixEnteredInErrorCarePlan(projectRoot: String) {

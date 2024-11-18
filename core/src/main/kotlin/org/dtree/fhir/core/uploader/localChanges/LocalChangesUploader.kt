@@ -17,6 +17,7 @@ import org.dtree.fhir.core.utils.*
 import io.github.cdimascio.dotenv.Dotenv
 import io.github.cdimascio.dotenv.dotenv
 import kotlinx.coroutines.runBlocking
+import org.dtree.fhir.core.di.FhirProvider
 import org.hl7.fhir.r4.context.SimpleWorkerContext
 import org.hl7.fhir.r4.model.Binary
 import org.hl7.fhir.r4.model.Bundle
@@ -49,7 +50,7 @@ class LocalChangesUploader(private val batchSize: Int = 10) {
             currentDir = filePath.getParentPath()
             val configManager = ProjectConfigManager()
             projectConfig = configManager.loadProjectConfig(projectRoot, filePath)
-            uploader = FhirClient(dotenv, iParser)
+            uploader = FhirClient(dotenv, FhirProvider())
             val data = filePath.readFile()
             val localChanges = gson.fromJson(data, LocalChangesModel::class.java)
             if (localChanges.changes.isNotEmpty()) {

@@ -1,7 +1,6 @@
 package org.dtree.fhir.server.plugins.tracing
 
 import io.ktor.resources.*
-import java.time.LocalDate
 
 @Resource("/tracing")
 class Tracing() {
@@ -13,7 +12,7 @@ class Tracing() {
             class List(val parent: Id = Facility.Id(), val date: String? = "")
 
             @Resource("all")
-            class All(val parent: Id = Facility.Id(), val date: String? = "")
+            class All(val parent: Id = Facility.Id(), val all: Boolean = true, val page: Int = 0, val pageSize: Int = 0)
 
             @Resource("clean-future-date")
             class CleanFutureDate(val parent: Id = Facility.Id())

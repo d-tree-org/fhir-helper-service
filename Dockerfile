@@ -1,5 +1,5 @@
 # Stage 1: Cache Gradle dependencies
-FROM gradle:7.6.1-jdk17 AS cache
+FROM gradle:7.6.3-jdk17 AS cache
 RUN mkdir -p /home/gradle/cache_home
 ENV GRADLE_USER_HOME /home/gradle/cache_home
 COPY . /home/gradle/app/
@@ -7,7 +7,7 @@ WORKDIR /home/gradle/app
 RUN gradle clean build -i --stacktrace
 
 # Stage 2: Build Application
-FROM gradle:7.6.1-jdk17 AS build
+FROM gradle:7.6.3-jdk17 AS build
 COPY --from=cache /home/gradle/cache_home /home/gradle/.gradle
 COPY . /usr/src/app/
 WORKDIR /usr/src/app

@@ -7,8 +7,9 @@ import org.dtree.fhir.core.utilities.ReasonConstants
 import org.dtree.fhir.core.utilities.SystemConstants
 import org.dtree.fhir.core.utils.extractOfficialIdentifier
 import org.dtree.fhir.core.utils.logicalId
-import org.dtree.fhir.server.core.models.FilterFormData
-import org.dtree.fhir.server.core.models.FilterTemplateType
+import org.dtree.fhir.server.core.cache.CacheManager
+import org.dtree.fhir.server.core.cache.PaginationUtil
+import org.dtree.fhir.server.core.models.*
 import org.dtree.fhir.server.core.search.filters.PredefinedFilters
 import org.dtree.fhir.server.core.search.filters.filterAddCount
 import org.dtree.fhir.server.core.search.filters.filterRevInclude
@@ -23,6 +24,8 @@ import java.time.ZoneId
 
 object TracingService : KoinComponent {
     private val client by inject<FhirClient>()
+    private val cacheManager = CacheManager<TracingResult>()
+    val paginationUtil = PaginationUtil<TracingResult>()
 
     fun getStats(facilityId: String): TracingStatsResults {
         val filter = FilterFormData(
@@ -53,7 +56,28 @@ object TracingService : KoinComponent {
         )
     }
 
-    fun getTracingList(facilityId: String, date: LocalDate): TracingListResults {
+    suspend fun getTracingList(facilityId: String, pagination: PaginationArgs): PaginatedResponse<TracingResult> {
+        if (pagination.all) {
+            val data = getTracingListFromServer(facilityId)
+            return PaginatedResponse(
+                items = data,
+                page = 0,
+                pageSize = 0,
+                totalItems = data.size,
+                totalPages = 0,
+            )
+        }
+        var data = cacheManager.get(facilityId)
+        if (data == null) {
+            data = getTracingListFromServer(facilityId)
+            cacheManager.set(facilityId, data)
+        }
+
+        val paginatedResponse = paginationUtil.paginate(data, pagination.pageSize, pagination.page)
+        return paginatedResponse
+    }
+
+    private suspend fun getTracingListFromServer(facilityId: String): List<TracingResult> {
         val filter = FilterFormData(
             resource = ResourceType.Task.name,
             filterId = "random_filter",
@@ -89,7 +113,7 @@ object TracingService : KoinComponent {
                 appointmentMap[patient] = appointment
             }
         }
-        return TracingListResults(map.map { entry ->
+        return map.map { entry ->
             val mPatient = entry.value.patient
             val type = mutableSetOf<String>()
             var mDate: LocalDate? = null
@@ -119,7 +143,7 @@ object TracingService : KoinComponent {
                 nextAppointment = appointmentDate,
                 isFutureAppointment = appointmentDate?.isAfter(LocalDate.now())
             )
-        }.distinctBy { it.uuid })
+        }.distinctBy { it.uuid }
     }
 
     suspend fun setTracingEnteredInError(patientId: List<String>) {
@@ -157,12 +181,43 @@ object TracingService : KoinComponent {
     }
 
     suspend fun cleanFutureDateMissedAppointment(facilityId: String) {
-        val results = getTracingList(facilityId, LocalDate.now()).results.mapNotNull {
+        val results = getTracingList(facilityId, PaginationArgs(all = true)).items.mapNotNull {
             if (it.isFutureAppointment == true) it.uuid
             else null
         }
         if (results.isEmpty()) return
         setTracingEnteredInError(results)
+    }
+
+    suspend fun cleanFutureDateMissedAppointmentAll() {
+        val filter = FilterFormData(
+            resource = ResourceType.Location.name,
+            filterId = "random_filter",
+            filters = listOf(
+                filterAddCount(20000),
+                FilterFormItem(
+                    filterId = "type",
+                    template = "type={value}",
+                    filterType = FilterTemplateType.template,
+                    params = listOf(
+                        FilterFormParamData(
+                            name = "value",
+                            type = FilterParamType.string,
+                            value = "https://d-tree.org/fhir/location-type|facility"
+                        )
+                    )
+                )
+            )
+        )
+
+        val results = fetch(client = client, actions = listOf(filter), hasIncludes = false, encode = true)
+        val locations = results.mapNotNull {
+            if (it.main is Location) it.main.logicalId else null
+        }
+
+        for (location in locations) {
+            cleanFutureDateMissedAppointment(location)
+        }
     }
 }
 

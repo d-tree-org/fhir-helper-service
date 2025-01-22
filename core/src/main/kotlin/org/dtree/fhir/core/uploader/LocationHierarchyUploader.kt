@@ -11,6 +11,7 @@ import org.dtree.fhir.core.utils.*
 import io.github.cdimascio.dotenv.Dotenv
 import io.github.cdimascio.dotenv.dotenv
 import kotlinx.coroutines.runBlocking
+import org.dtree.fhir.core.di.FhirProvider
 import org.dtree.fhir.core.utils.extractId
 import org.dtree.fhir.core.utils.logicalId
 import org.hl7.fhir.r4.context.SimpleWorkerContext
@@ -36,7 +37,7 @@ class LocationHierarchyUploader {
             dotenv = dotenv {
                 directory = projectRoot
             }
-            fhirClient = FhirClient(dotenv, iParser)
+            fhirClient = FhirClient(dotenv, FhirProvider())
             val list = fhirClient.searchResources<Location>(count = batchSize) {
 
             }

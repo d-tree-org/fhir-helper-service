@@ -21,10 +21,6 @@ import org.dtree.fhir.server.plugins.tracing.tracingModule
 fun Application.configureRouting() {
     install(Resources)
     install(SwaggerUI) {
-        swagger {
-            swaggerUrl = "swagger-ui"
-            forwardRoot = true
-        }
         info {
             title = "Example API"
             version = "latest"

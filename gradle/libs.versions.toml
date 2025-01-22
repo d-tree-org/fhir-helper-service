@@ -1,6 +1,6 @@
 [versions]
 ktor = "3.0.0" # Set your Ktor version
-kotlin = "2.0.10" # Set your Kotlin version
+kotlin = "2.1.0" # Set your Kotlin version
 koin = "4.1.0-Beta5" # Set your Koin version
 postgres = "42.5.1" # Set your PostgreSQL driver version
 h2 = "2.2.224" # Set your H2 version

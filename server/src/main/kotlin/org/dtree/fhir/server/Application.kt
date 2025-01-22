@@ -3,6 +3,7 @@ package org.dtree.fhir.server
 import io.ktor.server.application.*
 import org.dtree.fhir.server.plugins.configureFrameworks
 import org.dtree.fhir.server.plugins.configureRouting
+import org.dtree.fhir.server.plugins.configureScheduler
 import org.dtree.fhir.server.plugins.configureSecurity
 import org.dtree.fhir.server.util.loadEnv
 
@@ -16,4 +17,6 @@ fun Application.module() {
     configureFrameworks(dotEnv)
     configureSecurity()
     configureRouting()
+
+    configureScheduler()
 }

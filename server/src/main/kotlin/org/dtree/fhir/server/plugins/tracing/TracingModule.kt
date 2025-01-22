@@ -52,7 +52,7 @@ fun Route.tracingModule() {
                 }
             }
 
-            route("clean-future-date") {
+            route("clean-future-dates") {
                 post() {
                     val result = controller.cleanFutureDateMissedAppointment(call.parameters["id"] ?: "")
                     call.respond(result)
@@ -66,6 +66,13 @@ fun Route.tracingModule() {
                 if (patients.isEmpty()) return@post call.respond(HttpStatusCode.BadRequest, "Patients empty")
                 call.respond("Job started")
                 controller.setPatientsEnteredInError(patients)
+            }
+        }
+
+        route("clean-future-dates") {
+            post() {
+                call.respond("Request received")
+                controller.cleanFutureDateMissedAppointmentAll()
             }
         }
     }

@@ -43,13 +43,22 @@ class TracingControllerImpl : TracingController, BaseController(), KoinComponent
             false
         }
     }
+
+    override suspend fun cleanFutureDateMissedAppointmentAll(): Boolean {
+        return try {
+            tracingService.cleanFutureDateMissedAppointmentAll()
+            true
+        } catch (e: Exception) {
+            println(e)
+            false
+        }
+    }
 }
 
 interface TracingController {
     fun getStats(id: String): TracingStatsResults
-
     suspend fun getTracingList(facilityId: String, pagination: PaginationArgs): PaginatedResponse<TracingResult>
-
     suspend fun setPatientsEnteredInError(patients: List<String>): Boolean
     suspend fun cleanFutureDateMissedAppointment(facilityId: String): Boolean
+    suspend fun cleanFutureDateMissedAppointmentAll(): Boolean
 }

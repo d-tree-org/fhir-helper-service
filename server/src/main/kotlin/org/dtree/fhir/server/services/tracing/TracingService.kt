@@ -9,10 +9,7 @@ import org.dtree.fhir.core.utils.extractOfficialIdentifier
 import org.dtree.fhir.core.utils.logicalId
 import org.dtree.fhir.server.core.cache.CacheManager
 import org.dtree.fhir.server.core.cache.PaginationUtil
-import org.dtree.fhir.server.core.models.FilterFormData
-import org.dtree.fhir.server.core.models.FilterTemplateType
-import org.dtree.fhir.server.core.models.PaginatedResponse
-import org.dtree.fhir.server.core.models.PaginationArgs
+import org.dtree.fhir.server.core.models.*
 import org.dtree.fhir.server.core.search.filters.PredefinedFilters
 import org.dtree.fhir.server.core.search.filters.filterAddCount
 import org.dtree.fhir.server.core.search.filters.filterRevInclude
@@ -190,6 +187,37 @@ object TracingService : KoinComponent {
         }
         if (results.isEmpty()) return
         setTracingEnteredInError(results)
+    }
+
+    suspend fun cleanFutureDateMissedAppointmentAll() {
+        val filter = FilterFormData(
+            resource = ResourceType.Location.name,
+            filterId = "random_filter",
+            filters = listOf(
+                filterAddCount(20000),
+                FilterFormItem(
+                    filterId = "type",
+                    template = "type={value}",
+                    filterType = FilterTemplateType.template,
+                    params = listOf(
+                        FilterFormParamData(
+                            name = "value",
+                            type = FilterParamType.string,
+                            value = "https://d-tree.org/fhir/location-type|facility"
+                        )
+                    )
+                )
+            )
+        )
+
+        val results = fetch(client = client, actions = listOf(filter), hasIncludes = false, encode = true)
+        val locations = results.mapNotNull {
+            if (it.main is Location) it.main.logicalId else null
+        }
+
+        for (location in locations) {
+            cleanFutureDateMissedAppointment(location)
+        }
     }
 }
 

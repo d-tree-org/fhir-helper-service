@@ -37,8 +37,9 @@ dependencies {
 
     implementation(libs.ktor.server.core)
     implementation(libs.ktor.server.netty)
-
+    implementation(libs.ktor.server.cors)
     implementation(libs.ktor.server.webjars)
+
     implementation(libs.jquery)
     implementation(libs.ktor.swagger.ui)
     implementation(libs.ktor.server.auth)
@@ -52,7 +53,6 @@ dependencies {
     implementation(libs.koin.logger.slf4j)
     implementation(libs.ktor.serialization.json)
     implementation(libs.ktor.server.content.negotiation)
-    implementation(libs.postgresql)
     implementation(libs.h2)
 
     implementation(libs.logback.classic)
@@ -65,6 +65,15 @@ dependencies {
     implementation(libs.hapi.fhir.client.okhttp)
 
     implementation(libs.spullara.mustache)
+
+    implementation(libs.quartz)
+    implementation(libs.c3p0)
+
+    implementation(libs.exposed.core)
+    implementation(libs.exposed.jdbc)
+    implementation(libs.exposed.dao)
+    implementation(libs.exposed.java.time)
+    implementation(libs.postgresql)
 
     testImplementation(libs.ktor.server.test.host)
     testImplementation(libs.kotlin.test.junit)

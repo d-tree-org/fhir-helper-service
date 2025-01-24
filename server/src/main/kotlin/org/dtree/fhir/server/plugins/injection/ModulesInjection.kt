@@ -12,12 +12,8 @@ import org.dtree.fhir.server.controller.*
 import org.dtree.fhir.server.services.form.LocalResourceFetcher
 import org.dtree.fhir.server.services.form.ResourceFetcher
 import org.dtree.fhir.server.services.form.ResponseGenerator
-import org.koin.core.module.dsl.singleOf
-import org.dtree.fhir.server.controller.StatsController
-import org.dtree.fhir.server.controller.StatsControllerImpl
-import org.dtree.fhir.server.controller.TracingController
-import org.dtree.fhir.server.controller.TracingControllerImpl
 import org.koin.core.module.dsl.bind
+import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.module
 
 object ModulesInjection {

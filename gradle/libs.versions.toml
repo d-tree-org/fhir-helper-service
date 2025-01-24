@@ -24,11 +24,15 @@ kotlinLogging = "5.1.0"
 junit = "5.9.2"
 jsonToolsJsonPatch = "1.13"
 mustache = "0.9.10"
+quartz = "2.5.0"
+exposed-version = "0.58.0"
+c3p0 = "0.10.1"
 
 [libraries]
 ktor-server-core = { module = "io.ktor:ktor-server-core-jvm", version.ref = "ktor" }
 ktor-server-netty = { module = "io.ktor:ktor-server-netty-jvm", version.ref = "ktor" }
 ktor-server-webjars = { module = "io.ktor:ktor-server-webjars-jvm", version.ref = "ktor" }
+ktor-server-cors = { module = "io.ktor:ktor-server-cors", version.ref = "ktor" }
 jquery = { module = "org.webjars:jquery", version.ref = "jquery" }
 ktor-swagger-ui = { module = "io.github.smiley4:ktor-swagger-ui", version.ref = "swagger-ui" }
 ktor-server-auth = { module = "io.ktor:ktor-server-auth-jvm", version.ref = "ktor" }
@@ -78,6 +82,14 @@ snake-yaml = { group = "org.yaml", name = "snakeyaml", version.ref = "snakeYaml"
 gson = { group = "com.google.code.gson", name = "gson", version.ref = "gson" }
 kaml = { group = "com.charleskorn.kaml", name = "kaml", version.ref = "kaml" }
 hamcrest-core = { group = "org.hamcrest", name = "hamcrest-core", version.ref = "hamcrest" }
+
+quartz = { group = "org.quartz-scheduler", name = "quartz", version.ref = "quartz" }
+c3p0 = { group = "com.mchange", name = "c3p0", version.ref = "c3p0" }
+
+exposed-core = { module = "org.jetbrains.exposed:exposed-core", version.ref = "exposed-version" }
+exposed-jdbc = { module = "org.jetbrains.exposed:exposed-jdbc", version.ref = "exposed-version" }
+exposed-dao = { module = "org.jetbrains.exposed:exposed-dao", version.ref = "exposed-version" }
+exposed-java-time = { module = "org.jetbrains.exposed:exposed-java-time", version.ref = "exposed-version" }
 
 # Testing dependencies
 junit-jupiter-api = { group = "org.junit.jupiter", name = "junit-jupiter-api", version.ref = "junit" }

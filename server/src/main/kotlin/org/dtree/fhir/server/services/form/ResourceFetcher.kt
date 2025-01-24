@@ -8,6 +8,7 @@ import org.dtree.fhir.core.config.ProjectConfigManager
 import org.dtree.fhir.core.di.FhirProvider
 import org.dtree.fhir.core.utils.readFile
 import org.eclipse.jgit.api.Git
+import org.eclipse.jgit.api.ResetCommand
 import org.eclipse.jgit.api.TransportConfigCallback
 import org.eclipse.jgit.transport.TransportHttp
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider
@@ -84,7 +85,9 @@ class LocalResourceFetcher(private val dotEnv: Dotenv, private val iParser: IPar
     private fun updateExistingRepo(repoDir: File) {
         try {
             Git.open(repoDir).use { git ->
-                val call = git.pull()
+                git.reset().setMode(ResetCommand.ResetType.HARD).call()
+                val call = git
+                    .pull()
                     .setCredentialsProvider(credentialsProvider)
                     .setTransportConfigCallback(transportConfigCallback)
                     .call()

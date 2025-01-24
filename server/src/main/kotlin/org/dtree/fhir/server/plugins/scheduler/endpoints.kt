@@ -2,9 +2,13 @@ package org.dtree.fhir.server.plugins.scheduler
 
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import io.ktor.server.util.*
+import io.ktor.utils.io.*
 import org.koin.ktor.ext.inject
 import org.quartz.impl.matchers.GroupMatcher
+import java.time.format.DateTimeFormatter
 
+@OptIn(InternalAPI::class)
 fun Route.schedulerRoutes() {
     val schedulerManager by inject<JobSchedulerManager>()
 
@@ -31,8 +35,8 @@ fun Route.schedulerRoutes() {
                     mapOf(
                         "jobName" to jobKey.name,
                         "jobGroup" to jobKey.group,
-                        "nextFireTime" to trigger.nextFireTime?.toString(),
-                        "previousFireTime" to trigger.previousFireTime?.toString()
+                        "nextFireTime" to trigger.nextFireTime?.toZonedDateTime()?.format(DateTimeFormatter.ISO_INSTANT),
+                        "previousFireTime" to trigger.previousFireTime?.toZonedDateTime()?.format(DateTimeFormatter.ISO_INSTANT)
                     )
                 }
             }

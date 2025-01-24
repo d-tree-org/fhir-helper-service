@@ -31,15 +31,18 @@ class JobSchedulerManager(dotenv: Dotenv, jobFactory: JobFactory) {
     }
 
     private fun scheduleJobs() {
-        val job = JobBuilder.newJob(ClearTracingJob::class.java)
-            .withIdentity("clear-tracing-list", "jobs")
-            .build()
+        val jobKey = JobKey("clear-tracing-list", "jobs")
+        if (!scheduler.checkExists(jobKey)) {
+            val job = JobBuilder.newJob(ClearTracingJob::class.java)
+                .withIdentity(jobKey.name, jobKey.group)
+                .build()
 
-        val trigger = TriggerBuilder.newTrigger()
-            .withIdentity("clear-tracing-list-trigger", "jobs")
-            .withSchedule(CronScheduleBuilder.cronSchedule("0 0 7,12,17 * * ?"))
-            .build()
+            val trigger = TriggerBuilder.newTrigger()
+                .withIdentity("clear-tracing-list-trigger", "jobs")
+                .withSchedule(CronScheduleBuilder.cronSchedule("0 0 7,12,17 * * ?"))
+                .build()
 
-        scheduler.scheduleJob(job, trigger)
+            scheduler.scheduleJob(job, trigger)
+        }
     }
 }

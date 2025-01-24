@@ -4,6 +4,7 @@ import io.github.cdimascio.dotenv.Dotenv
 import io.ktor.serialization.gson.*
 import io.ktor.server.application.*
 import io.ktor.server.plugins.contentnegotiation.*
+import io.ktor.server.plugins.cors.routing.*
 import org.dtree.fhir.core.di.FhirProvider
 import org.dtree.fhir.server.data.JobHistoryRepository
 import org.dtree.fhir.server.plugins.injection.ModulesInjection
@@ -48,5 +49,8 @@ fun Application.configureFrameworks(dotEnv: Dotenv) {
             single { JobSchedulerManager(dotEnv, JobFactory(this.get<TracingService>(), this.get())) }
         })
 
+    }
+    install(CORS) {
+        anyHost()
     }
 }

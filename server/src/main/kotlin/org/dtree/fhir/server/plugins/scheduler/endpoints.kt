@@ -1,9 +1,11 @@
 package org.dtree.fhir.server.plugins.scheduler
 
+import io.ktor.http.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.server.util.*
 import io.ktor.utils.io.*
+import org.dtree.fhir.server.data.JobHistoryRepository
 import org.koin.ktor.ext.inject
 import org.quartz.impl.matchers.GroupMatcher
 import java.time.format.DateTimeFormatter
@@ -11,6 +13,7 @@ import java.time.format.DateTimeFormatter
 @OptIn(InternalAPI::class)
 fun Route.schedulerRoutes() {
     val schedulerManager by inject<JobSchedulerManager>()
+    val jobHistoryRepository by inject<JobHistoryRepository>()
 
     get("/jobs/active") {
         val activeJobs = schedulerManager.scheduler.jobGroupNames.flatMap { groupName ->
@@ -35,8 +38,10 @@ fun Route.schedulerRoutes() {
                     mapOf(
                         "jobName" to jobKey.name,
                         "jobGroup" to jobKey.group,
-                        "nextFireTime" to trigger.nextFireTime?.toZonedDateTime()?.format(DateTimeFormatter.ISO_INSTANT),
-                        "previousFireTime" to trigger.previousFireTime?.toZonedDateTime()?.format(DateTimeFormatter.ISO_INSTANT)
+                        "nextFireTime" to trigger.nextFireTime?.toZonedDateTime()
+                            ?.format(DateTimeFormatter.ISO_INSTANT),
+                        "previousFireTime" to trigger.previousFireTime?.toZonedDateTime()
+                            ?.format(DateTimeFormatter.ISO_INSTANT)
                     )
                 }
             }
@@ -54,5 +59,22 @@ fun Route.schedulerRoutes() {
             )
         }
         call.respond(runningJobs)
+    }
+
+    get("/jobs/{group}/{name}/history") {
+        val groupName = call.parameters["group"] ?: return@get call.respond(
+            HttpStatusCode.BadRequest,
+            mapOf("error" to "Group name is required")
+        )
+
+        val jobName = call.parameters["name"] ?: return@get call.respond(
+            HttpStatusCode.BadRequest,
+            mapOf("error" to "Job name is required")
+        )
+
+        val limit = call.request.queryParameters["limit"]?.toIntOrNull() ?: 100
+
+        val history = jobHistoryRepository.getJobHistory(jobName, groupName, limit)
+        call.respond(history)
     }
 }
